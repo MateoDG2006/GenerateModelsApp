@@ -1,0 +1,28 @@
+2026-09-27 20:14:52,415 INFO [ortesislab.addon] Registrando OrtesisLab.
+2026-09-27 20:14:52,416 INFO [ortesislab.addon] Retirando clases de OrtesisLab.
+2026-09-27 20:14:52,426 INFO [ortesislab.configuracion] Configuración cargada: limites.json
+2026-09-27 20:14:52,706 INFO [ortesislab.malla] Superficie preparada: 4 vértices, 2 triángulos, 4 aristas de contorno.
+2026-09-27 20:14:52,708 INFO [ortesislab.interfaz] Generación pedida para Plane
+2026-09-27 20:14:52,710 INFO [ortesislab.configuracion] Configuración cargada: parametros_defecto.json
+2026-09-27 20:14:52,717 INFO [ortesislab.malla] Superficie preparada: 4 vértices, 2 triángulos, 4 aristas de contorno.
+2026-09-27 20:14:52,872 INFO [ortesislab.superficie] Superficie subdividida en una copia: 4225 vértices, paso 0.933 mm.
+2026-09-27 20:14:53,414 INFO [ortesislab.malla] Superficie preparada: 4225 vértices, 8192 triángulos, 256 aristas de contorno.
+2026-09-27 20:14:53,423 INFO [ortesislab.modelo] Construyendo geometría SQUARE: celda 15.00 mm, nervadura 2.80 x 1.40 mm, capa continua.
+2026-09-27 20:14:53,549 INFO [ortesislab.cascaron] Cascarón cerrado: 8450 vértices, 16640 caras, 256 muros de contorno.
+2026-09-27 20:14:53,551 INFO [ortesislab.modelo] Patrón activo: Square (SQUARE)
+2026-09-27 20:14:53,675 INFO [ortesislab.objeto] Objeto OL_Ortesis creado.
+2026-09-27 20:14:53,770 INFO [ortesislab.objeto] Pared engrosada; las aberturas de la superficie se conservan sin voxel.
+2026-09-27 20:14:54,000 INFO [ortesislab.validacion] Malla cerrada y conectada: 16896 triángulos.
+2026-09-27 20:14:54,197 INFO [ortesislab.validacion] Malla cerrada y conectada: 16896 triángulos.
+2026-09-27 20:14:54,198 INFO [ortesislab.exportacion] Exportando STL en milímetros: C:\Users\mateo\ProyectoOrtesis\GenerateModelsApp\dist\zip_verificado\pared.stl
+2026-09-27 20:14:54,227 INFO [ortesislab.exportacion] Parámetros guardados en C:\Users\mateo\ProyectoOrtesis\GenerateModelsApp\dist\zip_verificado\pared.stl.json
+2026-09-27 20:14:54,229 INFO [ortesislab.addon] Retirando clases de OrtesisLab.
+Extensions: writing cache failed ([Errno 13] Permission denied: 'C:\\Users\\mateo\\AppData\\Roaming\\Blender Foundation\\Blender\\5.2\\extensions\\.cache\\compat.dat').
+Warning: addon-module GenerateModelsApp found module but without '__addon_enabled__' field, possible name collision from file: 'C:\\Users\\mateo\\ProyectoOrtesis\\GenerateModelsApp\\dist\\zip_verificado\\GenerateModelsApp\\__init__.py'
+Info: Pared sólida y conectada; geometría válida
+Info: File exported successfully
+PASS_ZIP: paquete aislado, panel, plano de cuatro vértices, patrón y exportación.
+Blender 5.2.2 LTS (hash d13f752e3b9c built 2026-09-15 01:37:04)
+Timer 'STL Export' took 22.74 ms
+
+Blender quit

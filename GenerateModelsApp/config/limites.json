@@ -1,0 +1,23 @@
+{
+  "min_cell_mm": 5,
+  "max_rib_width_ratio": 0.75,
+  "min_voxel_repair_mm": 0.15,
+  "fragment_vertex_floor": 50,
+  "fragment_vertex_ratio": 0.005,
+  "normal_smooth_iterations": 20,
+  "min_normal_length": 0.5,
+  "scale_tolerance": 1e-6,
+  "degenerate_area": 1e-8,
+  "pattern_batch": 384,
+  "voronoi_jitter": 0.28,
+  "seed_separation_epsilon": 1e-10,
+  "smooth_factor": 0.3,
+  "smooth_iterations": 2,
+  "min_rounding_width_mm": 0.02,
+  "normal_epsilon": 1e-12,
+  "max_surface_vertices": 500000,
+  "surface_subdivision_iterations": 16,
+  "clip_snap_mm": 0.0001,
+  "min_plausible_surface_extent_mm": 20,
+  "max_plausible_surface_extent_mm": 1000
+}

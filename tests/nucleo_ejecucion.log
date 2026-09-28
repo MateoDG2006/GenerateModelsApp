@@ -1,0 +1,61 @@
+test_distancia_identica_al_script_original (test_nucleo.GeometriaOriginal.test_distancia_identica_al_script_original) ... 2026-09-27 20:13:32,435 INFO [ortesislab.configuracion] Configuraci�n cargada: limites.json
+ok
+test_recorte_total_avisa_que_hay_que_ensanchar (test_nucleo.GeometriaOriginal.test_recorte_total_avisa_que_hay_que_ensanchar) ... 2026-09-27 20:13:32,493 ERROR [ortesislab.errores] SuperficieEliminadaPorPatron: El patr�n elimin� toda la superficie; aumente el ancho.
+ok
+test_recorte_y_cascaron_conservan_el_original (test_nucleo.GeometriaOriginal.test_recorte_y_cascaron_conservan_el_original) ... 2026-09-27 20:13:32,495 INFO [ortesislab.cascaron] Superficie recortada: 6 v�rtices, 4 tri�ngulos.
+2026-09-27 20:13:32,496 INFO [ortesislab.cascaron] Cascar�n cerrado: 12 v�rtices, 14 caras, 6 muros de contorno.
+ok
+test_smooth01_en_los_extremos (test_nucleo.GeometriaOriginal.test_smooth01_en_los_extremos) ... ok
+test_solido_cerrado_arista_no_manifold_y_vertice_suelto (test_nucleo.GeometriaOriginal.test_solido_cerrado_arista_no_manifold_y_vertice_suelto) ... 2026-09-27 20:13:32,526 ERROR [ortesislab.errores] SolidoCerrado: La base es un s�lido cerrado. Use una sola capa de caras sin espesor, con la parte superior y la zona del dedo abiertas.
+2026-09-27 20:13:32,529 ERROR [ortesislab.errores] AristasNoManifold: La superficie base contiene aristas no manifold.
+2026-09-27 20:13:32,532 ERROR [ortesislab.errores] VerticesSueltos: La superficie contiene v�rtices sueltos.
+ok
+test_triangulo_abierto_queda_en_el_contorno (test_nucleo.GeometriaOriginal.test_triangulo_abierto_queda_en_el_contorno) ... 2026-09-27 20:13:32,538 INFO [ortesislab.malla] Superficie preparada: 3 v�rtices, 1 tri�ngulos, 3 aristas de contorno.
+ok
+test_catalogo_y_patrones_sin_geometria (test_nucleo.ParametrosYMaterial.test_catalogo_y_patrones_sin_geometria) ... 2026-09-27 20:13:32,540 INFO [ortesislab.configuracion] Configuraci�n cargada: parametros_defecto.json
+2026-09-27 20:13:32,540 INFO [ortesislab.modelo] Patr�n activo: HoneyComb (HEX)
+2026-09-27 20:13:32,541 INFO [ortesislab.modelo] Patr�n activo: Solid (SOLID)
+2026-09-27 20:13:32,541 ERROR [ortesislab.errores] PatronNoImplementado: El patr�n Triangle no tiene una geometr�a definida. | Disponibles: VORONOI, HEX, DIAMOND, SQUARE, SOLID
+2026-09-27 20:13:32,542 ERROR [ortesislab.errores] PatronNoImplementado: El patr�n Minimalistic no tiene una geometr�a definida. | Disponibles: VORONOI, HEX, DIAMOND, SQUARE, SOLID
+ok
+test_el_paquete_no_exige_blender (test_nucleo.ParametrosYMaterial.test_el_paquete_no_exige_blender) ... 2026-09-27 20:13:32,546 ERROR [ortesislab.errores] EntornoBlenderRequerido: Este m�dulo solo puede ejecutarse dentro de Blender. | No module named 'bmesh'
+ok
+test_mensajes_de_cada_rechazo (test_nucleo.ParametrosYMaterial.test_mensajes_de_cada_rechazo) ... 2026-09-27 20:13:32,547 ERROR [ortesislab.errores] CeldaDemasiadoPequena: Use celdas de al menos 5 mm con esta superficie base.
+2026-09-27 20:13:32,548 ERROR [ortesislab.errores] NervaduraDemasiadoAncha: El ancho de nervadura debe ser menor que 75% de la celda.
+2026-09-27 20:13:32,548 ERROR [ortesislab.errores] PatronNoReconocido: Patr�n no reconocido.
+2026-09-27 20:13:32,549 ERROR [ortesislab.errores] SemillaInvalida: La semilla debe ser un entero no negativo.
+2026-09-27 20:13:32,549 ERROR [ortesislab.errores] SemillaInvalida: La semilla debe ser un entero no negativo.
+2026-09-27 20:13:32,549 ERROR [ortesislab.errores] ParametrosNoReconocidos: Par�metros no reconocidos: desconocido
+ok
+test_predeterminados_y_referencia (test_nucleo.ParametrosYMaterial.test_predeterminados_y_referencia) ... 2026-09-27 20:13:32,553 INFO [ortesislab.configuracion] Configuraci�n cargada: comprobacion_geometrica.json
+ok
+test_volumen_de_cascaron_y_sin_geometria (test_nucleo.ParametrosYMaterial.test_volumen_de_cascaron_y_sin_geometria) ... 2026-09-27 20:13:32,554 INFO [ortesislab.cascaron] Cascar�n cerrado: 6 v�rtices, 5 caras, 3 muros de contorno.
+2026-09-27 20:13:32,557 ERROR [ortesislab.errores] ModeloSinGeometria: No hay geometr�a para calcular el volumen.
+ok
+test_volumen_peso_y_precio_del_tetraedro (test_nucleo.ParametrosYMaterial.test_volumen_peso_y_precio_del_tetraedro) ... 2026-09-27 20:13:32,558 INFO [ortesislab.modelo] Volumen geom�trico del cascar�n, antes de la reconstrucci�n voxel: 0.167 mm�. No es una predicci�n de fabricaci�n.
+2026-09-27 20:13:32,559 INFO [ortesislab.modelo] Peso estimado: 0.0002 g con PETG.
+2026-09-27 20:13:32,559 INFO [ortesislab.modelo] Peso estimado: 0.0002 g con PETG.
+2026-09-27 20:13:32,559 INFO [ortesislab.modelo] Precio estimado: 0.0000, a 0.1500 por gramo de PETG. La unidad monetaria es la declarada en el material.
+ok
+test_capas_separadas_y_caras_duplicadas_se_rechazan (test_superficie_abierta.SuperficieAbierta.test_capas_separadas_y_caras_duplicadas_se_rechazan) ... 2026-09-27 20:13:32,562 ERROR [ortesislab.errores] SuperficieInvalida: La base debe ser una sola superficie conectada, sin capas o piezas separadas.
+2026-09-27 20:13:32,563 ERROR [ortesislab.errores] SuperficieInvalida: La base contiene caras duplicadas; use una sola capa de caras.
+ok
+test_engrosado_solo_une_cada_borde_con_su_copia (test_superficie_abierta.SuperficieAbierta.test_engrosado_solo_une_cada_borde_con_su_copia) ... 2026-09-27 20:13:32,567 INFO [ortesislab.malla] Superficie preparada: 6 v�rtices, 4 tri�ngulos, 6 aristas de contorno.
+2026-09-27 20:13:32,567 INFO [ortesislab.cascaron] Cascar�n cerrado: 12 v�rtices, 14 caras, 6 muros de contorno.
+ok
+test_invertir_lado_conserva_base_y_orientacion_del_volumen (test_superficie_abierta.SuperficieAbierta.test_invertir_lado_conserva_base_y_orientacion_del_volumen) ... 2026-09-27 20:13:32,570 INFO [ortesislab.malla] Superficie preparada: 6 v�rtices, 4 tri�ngulos, 6 aristas de contorno.
+2026-09-27 20:13:32,571 INFO [ortesislab.modelo] Construyendo geometr�a SOLID: celda 15.00 mm, nervadura 2.80 x 1.40 mm, capa continua.
+2026-09-27 20:13:32,572 INFO [ortesislab.cascaron] Cascar�n cerrado: 12 v�rtices, 14 caras, 6 muros de contorno.
+2026-09-27 20:13:32,573 INFO [ortesislab.modelo] Construyendo geometr�a SOLID: celda 15.00 mm, nervadura 2.80 x 1.40 mm, capa continua.
+2026-09-27 20:13:32,574 INFO [ortesislab.cascaron] Cascar�n cerrado: 12 v�rtices, 14 caras, 6 muros de contorno.
+ok
+test_normal_no_finita_y_orientacion_inconsistente (test_superficie_abierta.SuperficieAbierta.test_normal_no_finita_y_orientacion_inconsistente) ... 2026-09-27 20:13:32,579 ERROR [ortesislab.errores] SuperficieInvalida: La superficie contiene coordenadas o normales no finitas.
+2026-09-27 20:13:32,583 ERROR [ortesislab.errores] SuperficieInvalida: Hay caras con orientaci�n inconsistente. Recalcule las normales de la base.
+ok
+test_sueltos_se_rechazan_incluso_con_normales_guardadas (test_superficie_abierta.SuperficieAbierta.test_sueltos_se_rechazan_incluso_con_normales_guardadas) ... 2026-09-27 20:13:32,586 ERROR [ortesislab.errores] VerticesSueltos: La superficie contiene v�rtices sueltos.
+ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.584s
+
+OK

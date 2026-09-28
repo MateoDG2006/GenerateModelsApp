@@ -1,0 +1,5 @@
+{
+  "nivel_consola": "INFO",
+  "nivel_archivo": "DEBUG",
+  "archivo": "ortesislab.log"
+}

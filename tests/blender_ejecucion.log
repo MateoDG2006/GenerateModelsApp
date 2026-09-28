@@ -1,0 +1,132 @@
+2026-09-27 20:11:48,621 INFO [ortesislab.addon] Registrando OrtesisLab.
+2026-09-27 20:11:48,622 INFO [ortesislab.addon] Retirando clases de OrtesisLab.
+2026-09-27 20:11:48,623 INFO [ortesislab.interfaz] Generación pedida para sin nombre
+2026-09-27 20:11:48,625 INFO [ortesislab.configuracion] Configuración cargada: parametros_defecto.json
+2026-09-27 20:11:48,626 INFO [ortesislab.configuracion] Configuración cargada: limites.json
+2026-09-27 20:11:48,627 ERROR [ortesislab.errores] SuperficieNoEsMalla: Seleccione una malla de una sola capa de caras, sin espesor y abierta por arriba.
+2026-09-27 20:11:48,854 INFO [ortesislab.malla] Superficie preparada: 971 vértices, 1800 triángulos, 140 aristas de contorno.
+2026-09-27 20:11:48,904 INFO [ortesislab.malla] Superficie preparada: 971 vértices, 1800 triángulos, 140 aristas de contorno.
+2026-09-27 20:11:49,126 INFO [ortesislab.superficie] Superficie subdividida en una copia: 10827 vértices, paso 1.000 mm.
+2026-09-27 20:11:49,984 INFO [ortesislab.malla] Superficie preparada: 10827 vértices, 21240 triángulos, 412 aristas de contorno.
+2026-09-27 20:11:49,996 INFO [ortesislab.modelo] Construyendo geometría SOLID: celda 15.00 mm, nervadura 2.80 x 2.00 mm, capa continua.
+2026-09-27 20:11:50,318 INFO [ortesislab.cascaron] Cascarón cerrado: 21654 vértices, 42892 caras, 412 muros de contorno.
+2026-09-27 20:11:50,322 INFO [ortesislab.modelo] Patrón activo: Solid (SOLID)
+2026-09-27 20:11:50,569 INFO [ortesislab.objeto] Objeto OL_Ortesis creado.
+2026-09-27 20:11:50,757 INFO [ortesislab.objeto] Pared engrosada; las aberturas de la superficie se conservan sin voxel.
+2026-09-27 20:11:51,183 INFO [ortesislab.validacion] Malla cerrada y conectada: 43304 triángulos.
+2026-09-27 20:11:51,534 INFO [ortesislab.malla] Superficie preparada: 971 vértices, 1800 triángulos, 140 aristas de contorno.
+2026-09-27 20:11:51,789 INFO [ortesislab.superficie] Superficie subdividida en una copia: 14681 vértices, paso 0.933 mm.
+2026-09-27 20:11:52,805 INFO [ortesislab.malla] Superficie preparada: 14681 vértices, 28800 triángulos, 560 aristas de contorno.
+2026-09-27 20:11:52,822 INFO [ortesislab.modelo] Construyendo geometría SQUARE: celda 15.00 mm, nervadura 2.80 x 2.00 mm, capa continua.
+2026-09-27 20:11:53,243 INFO [ortesislab.cascaron] Cascarón cerrado: 29362 vértices, 58160 caras, 560 muros de contorno.
+2026-09-27 20:11:53,246 INFO [ortesislab.modelo] Patrón activo: Square (SQUARE)
+2026-09-27 20:11:53,543 INFO [ortesislab.objeto] Objeto OL_Ortesis actualizado.
+2026-09-27 20:11:53,728 INFO [ortesislab.objeto] Pared engrosada; las aberturas de la superficie se conservan sin voxel.
+2026-09-27 20:11:54,183 INFO [ortesislab.validacion] Malla cerrada y conectada: 58720 triángulos.
+2026-09-27 20:11:54,283 INFO [ortesislab.malla] Superficie preparada: 971 vértices, 1800 triángulos, 140 aristas de contorno.
+2026-09-27 20:11:54,557 INFO [ortesislab.superficie] Superficie subdividida en una copia: 14681 vértices, paso 0.933 mm.
+2026-09-27 20:11:55,322 INFO [ortesislab.malla] Superficie preparada: 14681 vértices, 28800 triángulos, 560 aristas de contorno.
+2026-09-27 20:11:55,337 INFO [ortesislab.modelo] Construyendo geometría SQUARE: celda 15.00 mm, nervadura 2.80 x 2.00 mm, capa abierta.
+2026-09-27 20:11:56,676 INFO [ortesislab.cascaron] Superficie recortada: 10825 vértices, 18023 triángulos.
+2026-09-27 20:11:56,989 INFO [ortesislab.cascaron] Cascarón cerrado: 21650 vértices, 39715 caras, 3669 muros de contorno.
+2026-09-27 20:11:56,992 INFO [ortesislab.modelo] Patrón activo: Square (SQUARE)
+2026-09-27 20:11:57,250 INFO [ortesislab.objeto] Objeto OL_Ortesis actualizado.
+2026-09-27 20:11:57,435 INFO [ortesislab.objeto] Pared engrosada; las aberturas de la superficie se conservan sin voxel.
+2026-09-27 20:11:57,803 INFO [ortesislab.validacion] Malla cerrada y conectada: 43384 triángulos.
+2026-09-27 20:11:57,909 INFO [ortesislab.malla] Superficie preparada: 971 vértices, 1800 triángulos, 140 aristas de contorno.
+2026-09-27 20:11:58,213 INFO [ortesislab.superficie] Superficie subdividida en una copia: 14681 vértices, paso 0.933 mm.
+2026-09-27 20:11:59,695 INFO [ortesislab.malla] Superficie preparada: 14681 vértices, 28800 triángulos, 560 aristas de contorno.
+2026-09-27 20:11:59,715 INFO [ortesislab.modelo] Construyendo geometría DIAMOND: celda 15.00 mm, nervadura 2.80 x 2.00 mm, capa continua.
+2026-09-27 20:12:00,209 INFO [ortesislab.cascaron] Cascarón cerrado: 29362 vértices, 58160 caras, 560 muros de contorno.
+2026-09-27 20:12:00,212 INFO [ortesislab.modelo] Patrón activo: Diamond (DIAMOND)
+2026-09-27 20:12:00,494 INFO [ortesislab.objeto] Objeto OL_Ortesis actualizado.
+2026-09-27 20:12:00,663 INFO [ortesislab.objeto] Pared engrosada; las aberturas de la superficie se conservan sin voxel.
+2026-09-27 20:12:01,085 INFO [ortesislab.validacion] Malla cerrada y conectada: 58720 triángulos.
+2026-09-27 20:12:01,199 INFO [ortesislab.malla] Superficie preparada: 971 vértices, 1800 triángulos, 140 aristas de contorno.
+2026-09-27 20:12:01,465 INFO [ortesislab.superficie] Superficie subdividida en una copia: 14681 vértices, paso 0.933 mm.
+2026-09-27 20:12:02,269 INFO [ortesislab.malla] Superficie preparada: 14681 vértices, 28800 triángulos, 560 aristas de contorno.
+2026-09-27 20:12:02,283 INFO [ortesislab.modelo] Construyendo geometría DIAMOND: celda 15.00 mm, nervadura 2.80 x 2.00 mm, capa abierta.
+2026-09-27 20:12:04,050 INFO [ortesislab.cascaron] Superficie recortada: 10628 vértices, 17764 triángulos.
+2026-09-27 20:12:04,390 INFO [ortesislab.cascaron] Cascarón cerrado: 21256 vértices, 39066 caras, 3538 muros de contorno.
+2026-09-27 20:12:04,394 INFO [ortesislab.modelo] Patrón activo: Diamond (DIAMOND)
+2026-09-27 20:12:04,610 INFO [ortesislab.objeto] Objeto OL_Ortesis actualizado.
+2026-09-27 20:12:04,749 INFO [ortesislab.objeto] Pared engrosada; las aberturas de la superficie se conservan sin voxel.
+2026-09-27 20:12:05,115 INFO [ortesislab.validacion] Malla cerrada y conectada: 42604 triángulos.
+2026-09-27 20:12:05,202 INFO [ortesislab.malla] Superficie preparada: 971 vértices, 1800 triángulos, 140 aristas de contorno.
+2026-09-27 20:12:05,440 INFO [ortesislab.superficie] Superficie subdividida en una copia: 14681 vértices, paso 0.933 mm.
+2026-09-27 20:12:06,167 INFO [ortesislab.malla] Superficie preparada: 14681 vértices, 28800 triángulos, 560 aristas de contorno.
+2026-09-27 20:12:06,180 INFO [ortesislab.modelo] Construyendo geometría HEX: celda 15.00 mm, nervadura 2.80 x 2.00 mm, capa continua.
+2026-09-27 20:12:06,842 INFO [ortesislab.cascaron] Cascarón cerrado: 29362 vértices, 58160 caras, 560 muros de contorno.
+2026-09-27 20:12:06,845 INFO [ortesislab.modelo] Patrón activo: HoneyComb (HEX)
+2026-09-27 20:12:07,127 INFO [ortesislab.objeto] Objeto OL_Ortesis actualizado.
+2026-09-27 20:12:07,319 INFO [ortesislab.objeto] Pared engrosada; las aberturas de la superficie se conservan sin voxel.
+2026-09-27 20:12:07,721 INFO [ortesislab.validacion] Malla cerrada y conectada: 58720 triángulos.
+2026-09-27 20:12:07,897 INFO [ortesislab.malla] Superficie preparada: 971 vértices, 1800 triángulos, 140 aristas de contorno.
+2026-09-27 20:12:08,187 INFO [ortesislab.superficie] Superficie subdividida en una copia: 14681 vértices, paso 0.933 mm.
+2026-09-27 20:12:08,997 INFO [ortesislab.malla] Superficie preparada: 14681 vértices, 28800 triángulos, 560 aristas de contorno.
+2026-09-27 20:12:09,012 INFO [ortesislab.modelo] Construyendo geometría HEX: celda 15.00 mm, nervadura 2.80 x 2.00 mm, capa abierta.
+2026-09-27 20:12:10,739 INFO [ortesislab.cascaron] Superficie recortada: 10298 vértices, 17035 triángulos.
+2026-09-27 20:12:10,925 INFO [ortesislab.cascaron] Cascarón cerrado: 20596 vértices, 37671 caras, 3601 muros de contorno.
+2026-09-27 20:12:10,928 INFO [ortesislab.modelo] Patrón activo: HoneyComb (HEX)
+2026-09-27 20:12:11,151 INFO [ortesislab.objeto] Objeto OL_Ortesis actualizado.
+2026-09-27 20:12:11,273 INFO [ortesislab.objeto] Pared engrosada; las aberturas de la superficie se conservan sin voxel.
+2026-09-27 20:12:11,557 INFO [ortesislab.validacion] Malla cerrada y conectada: 41272 triángulos.
+2026-09-27 20:12:11,650 INFO [ortesislab.malla] Superficie preparada: 971 vértices, 1800 triángulos, 140 aristas de contorno.
+2026-09-27 20:12:11,936 INFO [ortesislab.superficie] Superficie subdividida en una copia: 14681 vértices, paso 0.933 mm.
+2026-09-27 20:12:12,809 INFO [ortesislab.malla] Superficie preparada: 14681 vértices, 28800 triángulos, 560 aristas de contorno.
+2026-09-27 20:12:12,829 INFO [ortesislab.modelo] Construyendo geometría VORONOI: celda 15.00 mm, nervadura 2.80 x 2.00 mm, capa continua.
+2026-09-27 20:12:13,475 INFO [ortesislab.cascaron] Cascarón cerrado: 29362 vértices, 58160 caras, 560 muros de contorno.
+2026-09-27 20:12:13,479 INFO [ortesislab.modelo] Patrón activo: Voronoi (VORONOI)
+2026-09-27 20:12:13,712 INFO [ortesislab.objeto] Objeto OL_Ortesis actualizado.
+2026-09-27 20:12:13,829 INFO [ortesislab.objeto] Pared engrosada; las aberturas de la superficie se conservan sin voxel.
+2026-09-27 20:12:14,191 INFO [ortesislab.validacion] Malla cerrada y conectada: 58720 triángulos.
+2026-09-27 20:12:14,328 INFO [ortesislab.malla] Superficie preparada: 971 vértices, 1800 triángulos, 140 aristas de contorno.
+2026-09-27 20:12:14,605 INFO [ortesislab.superficie] Superficie subdividida en una copia: 14681 vértices, paso 0.933 mm.
+2026-09-27 20:12:15,526 INFO [ortesislab.malla] Superficie preparada: 14681 vértices, 28800 triángulos, 560 aristas de contorno.
+2026-09-27 20:12:15,542 INFO [ortesislab.modelo] Construyendo geometría VORONOI: celda 15.00 mm, nervadura 2.80 x 2.00 mm, capa abierta.
+2026-09-27 20:12:18,044 INFO [ortesislab.cascaron] Superficie recortada: 10734 vértices, 17839 triángulos.
+2026-09-27 20:12:18,404 INFO [ortesislab.cascaron] Cascarón cerrado: 21468 vértices, 39349 caras, 3671 muros de contorno.
+2026-09-27 20:12:18,408 INFO [ortesislab.modelo] Patrón activo: Voronoi (VORONOI)
+2026-09-27 20:12:18,696 INFO [ortesislab.objeto] Objeto OL_Ortesis actualizado.
+2026-09-27 20:12:18,953 INFO [ortesislab.objeto] Pared engrosada; las aberturas de la superficie se conservan sin voxel.
+2026-09-27 20:12:19,442 INFO [ortesislab.validacion] Malla cerrada y conectada: 43020 triángulos.
+2026-09-27 20:12:19,510 INFO [ortesislab.interfaz] Generación pedida para Base_abierta_mano_y_dedo
+2026-09-27 20:12:19,592 INFO [ortesislab.malla] Superficie preparada: 971 vértices, 1800 triángulos, 140 aristas de contorno.
+2026-09-27 20:12:19,986 INFO [ortesislab.superficie] Superficie subdividida en una copia: 14681 vértices, paso 0.933 mm.
+2026-09-27 20:12:22,315 INFO [ortesislab.malla] Superficie preparada: 14681 vértices, 28800 triángulos, 560 aristas de contorno.
+2026-09-27 20:12:22,343 INFO [ortesislab.modelo] Construyendo geometría HEX: celda 15.00 mm, nervadura 2.80 x 1.40 mm, capa continua.
+2026-09-27 20:12:23,516 INFO [ortesislab.cascaron] Cascarón cerrado: 29362 vértices, 58160 caras, 560 muros de contorno.
+2026-09-27 20:12:23,521 INFO [ortesislab.modelo] Patrón activo: HoneyComb (HEX)
+2026-09-27 20:12:23,973 INFO [ortesislab.objeto] Objeto OL_Ortesis actualizado.
+2026-09-27 20:12:24,294 INFO [ortesislab.objeto] Pared engrosada; las aberturas de la superficie se conservan sin voxel.
+2026-09-27 20:12:24,394 INFO [ortesislab.malla] Superficie preparada: 971 vértices, 1800 triángulos, 140 aristas de contorno.
+2026-09-27 20:12:24,911 INFO [ortesislab.superficie] Superficie subdividida en una copia: 14681 vértices, paso 0.933 mm.
+2026-09-27 20:12:26,034 INFO [ortesislab.malla] Superficie preparada: 14681 vértices, 28800 triángulos, 560 aristas de contorno.
+2026-09-27 20:12:26,050 INFO [ortesislab.modelo] Construyendo geometría HEX: celda 15.00 mm, nervadura 2.80 x 1.40 mm, capa continua.
+2026-09-27 20:12:26,656 INFO [ortesislab.cascaron] Cascarón cerrado: 29362 vértices, 58160 caras, 560 muros de contorno.
+2026-09-27 20:12:26,659 INFO [ortesislab.modelo] Patrón activo: HoneyComb (HEX)
+2026-09-27 20:12:26,759 INFO [ortesislab.malla] Superficie preparada: 971 vértices, 1800 triángulos, 140 aristas de contorno.
+2026-09-27 20:12:27,012 INFO [ortesislab.superficie] Superficie subdividida en una copia: 14681 vértices, paso 0.933 mm.
+2026-09-27 20:12:27,962 INFO [ortesislab.malla] Superficie preparada: 14681 vértices, 28800 triángulos, 560 aristas de contorno.
+2026-09-27 20:12:27,975 INFO [ortesislab.modelo] Construyendo geometría VORONOI: celda 15.00 mm, nervadura 2.80 x 1.40 mm, capa continua.
+2026-09-27 20:12:28,516 INFO [ortesislab.cascaron] Cascarón cerrado: 29362 vértices, 58160 caras, 560 muros de contorno.
+2026-09-27 20:12:28,520 INFO [ortesislab.modelo] Patrón activo: Voronoi (VORONOI)
+2026-09-27 20:12:28,706 INFO [ortesislab.objeto] Objeto OL_Ortesis actualizado.
+2026-09-27 20:12:28,818 INFO [ortesislab.objeto] Reconstrucción voxel a 0.300 mm.
+2026-09-27 20:12:30,862 INFO [ortesislab.objeto] Reconstrucción y suavizado aplicados sobre OL_Ortesis.
+2026-09-27 20:12:32,885 INFO [ortesislab.validacion] Malla cerrada y conectada: 271312 triángulos.
+2026-09-27 20:12:33,057 ERROR [ortesislab.errores] SolidoCerrado: La base es un sólido cerrado. Use una sola capa de caras sin espesor, con la parte superior y la zona del dedo abiertas.
+2026-09-27 20:12:33,113 INFO [ortesislab.malla] Superficie preparada: 971 vértices, 1800 triángulos, 140 aristas de contorno.
+2026-09-27 20:12:33,171 INFO [ortesislab.malla] Superficie preparada: 971 vértices, 1800 triángulos, 140 aristas de contorno.
+2026-09-27 20:12:33,213 INFO [ortesislab.malla] Superficie preparada: 971 vértices, 1800 triángulos, 140 aristas de contorno.
+2026-09-27 20:12:33,214 INFO [ortesislab.addon] Retirando clases de OrtesisLab.
+2026-09-27 20:12:33,215 INFO [ortesislab.addon] Registrando OrtesisLab.
+2026-09-27 20:12:33,215 INFO [ortesislab.addon] Retirando clases de OrtesisLab.
+2026-09-27 20:12:33,216 INFO [ortesislab.addon] Retirando clases de OrtesisLab.
+Extensions: writing cache failed ([Errno 13] Permission denied: 'C:\\Users\\mateo\\AppData\\Roaming\\Blender Foundation\\Blender\\5.2\\extensions\\.cache\\compat.dat').
+Warning: addon-module GenerateModelsApp found module but without '__addon_enabled__' field, possible name collision from file: 'C:\\Users\\mateo\\ProyectoOrtesis\\GenerateModelsApp\\GenerateModelsApp\\__init__.py'
+Error: Seleccione una malla de una sola capa de caras, sin espesor y abierta por arriba.
+PASS_BLENDER: nueve variantes, dos canales abiertos, edición de base, panel, reconstrucción y rechazo de sólidos.
+Blender 5.2.2 LTS (hash d13f752e3b9c built 2026-09-15 01:37:04)
+
+Blender quit

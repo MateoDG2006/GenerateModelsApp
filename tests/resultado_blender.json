@@ -1,0 +1,124 @@
+{
+  "blender": "5.2.2 LTS",
+  "upper_and_finger_openings": true,
+  "base_unchanged": true,
+  "patterns": [
+    {
+      "pattern": "SOLID",
+      "liner": true,
+      "validation": {
+        "open_edges": 0,
+        "nonmanifold_edges": 0,
+        "degenerate_faces": 0,
+        "triangles": 43304,
+        "components": 1,
+        "triangle_crossings": 0,
+        "ok": true
+      }
+    },
+    {
+      "pattern": "SQUARE",
+      "liner": true,
+      "validation": {
+        "open_edges": 0,
+        "nonmanifold_edges": 0,
+        "degenerate_faces": 0,
+        "triangles": 58720,
+        "components": 1,
+        "triangle_crossings": 0,
+        "ok": true
+      }
+    },
+    {
+      "pattern": "SQUARE",
+      "liner": false,
+      "validation": {
+        "open_edges": 0,
+        "nonmanifold_edges": 0,
+        "degenerate_faces": 0,
+        "triangles": 43384,
+        "components": 1,
+        "triangle_crossings": 0,
+        "ok": true
+      }
+    },
+    {
+      "pattern": "DIAMOND",
+      "liner": true,
+      "validation": {
+        "open_edges": 0,
+        "nonmanifold_edges": 0,
+        "degenerate_faces": 0,
+        "triangles": 58720,
+        "components": 1,
+        "triangle_crossings": 0,
+        "ok": true
+      }
+    },
+    {
+      "pattern": "DIAMOND",
+      "liner": false,
+      "validation": {
+        "open_edges": 0,
+        "nonmanifold_edges": 0,
+        "degenerate_faces": 0,
+        "triangles": 42604,
+        "components": 1,
+        "triangle_crossings": 0,
+        "ok": true
+      }
+    },
+    {
+      "pattern": "HEX",
+      "liner": true,
+      "validation": {
+        "open_edges": 0,
+        "nonmanifold_edges": 0,
+        "degenerate_faces": 0,
+        "triangles": 58720,
+        "components": 1,
+        "triangle_crossings": 0,
+        "ok": true
+      }
+    },
+    {
+      "pattern": "HEX",
+      "liner": false,
+      "validation": {
+        "open_edges": 0,
+        "nonmanifold_edges": 0,
+        "degenerate_faces": 0,
+        "triangles": 41272,
+        "components": 1,
+        "triangle_crossings": 0,
+        "ok": true
+      }
+    },
+    {
+      "pattern": "VORONOI",
+      "liner": true,
+      "validation": {
+        "open_edges": 0,
+        "nonmanifold_edges": 0,
+        "degenerate_faces": 0,
+        "triangles": 58720,
+        "components": 1,
+        "triangle_crossings": 0,
+        "ok": true
+      }
+    },
+    {
+      "pattern": "VORONOI",
+      "liner": false,
+      "validation": {
+        "open_edges": 0,
+        "nonmanifold_edges": 0,
+        "degenerate_faces": 0,
+        "triangles": 43020,
+        "components": 1,
+        "triangle_crossings": 0,
+        "ok": true
+      }
+    }
+  ]
+}

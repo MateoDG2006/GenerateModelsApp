@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Vista previa</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #eef1f4; color: #1c2024; font-family: sans-serif; }
+    canvas { display: block; }
+    p { margin: 1.5rem; }
+  </style>
+</head>
+<body>
+<script type="module">
+import * as THREE from "https://unpkg.com/three@0.169.0/build/three.module.js";
+
+const aviso = document.createElement("p");
+document.body.append(aviso);
+const origen = new URLSearchParams(location.search).get("src");
+if (!origen) {
+  aviso.textContent = "Genere una ortesis para verla aquí.";
+  throw new Error("sin malla");
+}
+aviso.textContent = "Cargando malla…";
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+document.body.append(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xeef1f4);
+const camera = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.1, 5000);
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8b95a1, 0.45));
+const luz = new THREE.DirectionalLight(0xffffff, 1.15);
+luz.position.set(0.6, 1, 1.4);
+scene.add(luz);
+
+const objetivo = new THREE.Vector3();
+let arrastre = false;
+let anterior = { x: 0, y: 0 };
+const esferica = { radio: 1, theta: 0.6, phi: 1.05 };
+
+function encuadrar() {
+  const desplazamiento = new THREE.Vector3(
+    Math.sin(esferica.phi) * Math.cos(esferica.theta),
+    Math.cos(esferica.phi),
+    Math.sin(esferica.phi) * Math.sin(esferica.theta),
+  ).multiplyScalar(esferica.radio);
+  camera.position.copy(objetivo).add(desplazamiento);
+  camera.lookAt(objetivo);
+}
+
+function geometria(buffer) {
+  const vista = new DataView(buffer);
+  const caras = vista.getUint32(80, true);
+  const posiciones = new Float32Array(caras * 9);
+  let cursor = 84;
+  let escrito = 0;
+  for (let cara = 0; cara < caras; cara += 1) {
+    cursor += 12;
+    for (let componente = 0; componente < 9; componente += 1) {
+      posiciones[escrito] = vista.getFloat32(cursor, true);
+      escrito += 1;
+      cursor += 4;
+    }
+    cursor += 2;
+  }
+  const malla = new THREE.BufferGeometry();
+  malla.setAttribute("position", new THREE.BufferAttribute(posiciones, 3));
+  malla.computeVertexNormals();
+  malla.computeBoundingSphere();
+  return malla;
+}
+
+const respuesta = await fetch(origen);
+if (!respuesta.ok) {
+  aviso.textContent = "No se pudo leer la malla generada.";
+  throw new Error(String(respuesta.status));
+}
+const malla = geometria(await respuesta.arrayBuffer());
+aviso.remove();
+const material = new THREE.MeshStandardMaterial({
+  color: 0xd5dbe3,
+  metalness: 0.04,
+  roughness: 0.62,
+  side: THREE.DoubleSide,
+});
+scene.add(new THREE.Mesh(malla, material));
+const esfera = malla.boundingSphere;
+objetivo.copy(esfera.center);
+esferica.radio = Math.max(esfera.radius * 2.4, 1);
+camera.near = esfera.radius / 100;
+camera.far = esfera.radius * 30;
+camera.updateProjectionMatrix();
+encuadrar();
+
+renderer.domElement.addEventListener("pointerdown", (evento) => {
+  arrastre = true;
+  anterior = { x: evento.clientX, y: evento.clientY };
+});
+addEventListener("pointerup", () => { arrastre = false; });
+addEventListener("pointermove", (evento) => {
+  if (!arrastre) return;
+  esferica.theta += (evento.clientX - anterior.x) * 0.008;
+  esferica.phi = Math.min(Math.max(esferica.phi + (evento.clientY - anterior.y) * 0.008, 0.15), Math.PI - 0.15);
+  anterior = { x: evento.clientX, y: evento.clientY };
+  encuadrar();
+});
+renderer.domElement.addEventListener("wheel", (evento) => {
+  evento.preventDefault();
+  esferica.radio = Math.min(Math.max(esferica.radio * (evento.deltaY > 0 ? 1.08 : 0.92), esfera.radius * 0.4), esfera.radius * 12);
+  encuadrar();
+}, { passive: false });
+addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+function dibujar() {
+  requestAnimationFrame(dibujar);
+  renderer.render(scene, camera);
+}
+dibujar();
+</script>
+</body>
+</html>

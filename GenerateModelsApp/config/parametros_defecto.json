@@ -1,0 +1,19 @@
+{
+  "pattern": "VORONOI",
+  "cell_mm": 15.0,
+  "rib_width_mm": 2.8,
+  "rib_height_mm": 1.4,
+  "liner": true,
+  "skin_mm": 1.0,
+  "solid_mm": 2.4,
+  "border_mm": 4.0,
+  "rounding_mm": 0.8,
+  "angle_deg": 0.0,
+  "seed": 7,
+  "reinforce_y_mm": 0.0,
+  "reinforce_width_mm": 0.0,
+  "repair": false,
+  "flip_normals": false,
+  "surface_step_mm": 1.0,
+  "resolution_mm": 0.3
+}

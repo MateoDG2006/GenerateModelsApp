@@ -1,0 +1,24 @@
+{
+  "blender": "5.2.2 LTS",
+  "example_continuous_liner": {
+    "open_edges": 0,
+    "nonmanifold_edges": 0,
+    "degenerate_faces": 0,
+    "triangles": 2923508,
+    "components": 1,
+    "triangle_crossings": 0,
+    "ok": true
+  },
+  "example_open_lattice": {
+    "open_edges": 0,
+    "nonmanifold_edges": 0,
+    "degenerate_faces": 0,
+    "triangles": 1766064,
+    "components": 1,
+    "triangle_crossings": 0,
+    "ok": true
+  },
+  "units": "mm",
+  "scope": "Geometry only",
+  "flat_fixture_tests": "5 patterns; 4 open patterns; width, height, liner thickness, seed, UI operator and STL round trip."
+}

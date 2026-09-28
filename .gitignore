@@ -1,0 +1,21 @@
+.web
+assets/external/
+*.py[cod]
+.states
+*.db
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Registro de ejecución de OrtesisLab
+logs/
+
+# Mallas que la aplicación web escribe para previsualizar
+uploaded_files/
