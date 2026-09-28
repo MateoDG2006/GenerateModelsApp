@@ -200,6 +200,7 @@ class SuperficieInterior:
             SuperficieInterior._Triangulo(bm)
             limite = int(Configuracion.ValorLimite("max_surface_vertices"))
             rondas = int(Configuracion.ValorLimite("surface_subdivision_iterations"))
+            detenida = False
             for _ in range(rondas):
                 SuperficieInterior._Tablas(bm)
                 largas = [e for e in bm.edges if e.calc_length() > paso_mm * 1.001]
@@ -215,18 +216,24 @@ class SuperficieInterior:
                         and len(bm.faces) * 4 > limite
                     )
                 ):
-                    raise SuperficieInvalida(
-                        "La subdivisión supera el límite de detalle. Aumente el paso de superficie."
-                    )
+                    detenida = True
+                    break
                 bmesh.ops.subdivide_edges(bm, edges=largas, cuts=1, use_grid_fill=True)
                 SuperficieInterior._Tablas(bm)
                 SuperficieInterior._Triangulo(bm)
             SuperficieInterior._Tablas(bm)
-            if len(bm.verts) > limite or any(
-                e.calc_length() > paso_mm * 1.001 for e in bm.edges
+            if not detenida and (
+                len(bm.verts) > limite
+                or any(e.calc_length() > paso_mm * 1.001 for e in bm.edges)
             ):
                 raise SuperficieInvalida(
                     "No se alcanzó el paso de superficie. Aumente el paso o revise las unidades en mm."
+                )
+            if detenida:
+                Registro.Obtener("superficie").info(
+                    "Subdivisión detenida en %s vértices, por debajo del paso %.3f mm.",
+                    len(bm.verts),
+                    paso_mm,
                 )
             bm.normal_update()
             bm.verts.index_update()

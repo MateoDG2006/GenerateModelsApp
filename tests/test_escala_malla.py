@@ -97,30 +97,23 @@ class DiagnosticoEscala(unittest.TestCase):
             )
         self.assertIn("No se alcanzó el paso de superficie", str(captura.exception))
 
-    def test_una_malla_ya_en_mm_prueba_una_decima_si_el_paso_no_cabe(self):
-        llamadas = []
+    def test_una_malla_ya_en_mm_no_se_encoge_por_debajo_del_rango(self):
+        def intentar(_factor):
+            raise SuperficieInvalida(
+                "No se alcanzó el paso de superficie. "
+                "Aumente el paso o revise las unidades en mm."
+            )
 
-        def intentar(factor):
-            llamadas.append(factor)
-            if factor >= 1.0:
-                raise SuperficieInvalida(
-                    "La subdivisión supera el límite de detalle. Aumente el paso de superficie."
-                )
-            return "listo"
+        with self.assertRaises(SuperficieInvalida):
+            EscalaMalla.Aplicar(
+                150,
+                True,
+                intentar,
+                arista_maxima=150,
+                paso_mm=1.0,
+            )
 
-        resultado, diagnostico = EscalaMalla.Aplicar(
-            150,
-            True,
-            intentar,
-            arista_maxima=150,
-            paso_mm=1.0,
-        )
-        self.assertEqual(resultado, "listo")
-        self.assertEqual(llamadas[0], 1.0)
-        self.assertEqual(diagnostico["factor"], 0.1)
-        self.assertAlmostEqual(diagnostico["dimension_despues_mm"], 15)
-
-    def test_no_intenta_subdividir_si_la_malla_no_cabe(self):
+    def test_el_limite_de_vertices_no_cambia_la_escala(self):
         llamadas = []
 
         def intentar(factor):
@@ -135,8 +128,28 @@ class DiagnosticoEscala(unittest.TestCase):
             paso_mm=1.0,
             n_caras=2,
         )
-        self.assertEqual(llamadas, [0.1])
-        self.assertEqual(diagnostico["factor"], 0.1)
+        self.assertEqual(llamadas, [1.0])
+        self.assertEqual(diagnostico["factor"], 1.0)
+        self.assertAlmostEqual(diagnostico["dimension_despues_mm"], 800)
+
+    def test_una_superficie_en_centimetros_conserva_el_factor_decimal(self):
+        llamadas = []
+
+        def intentar(factor):
+            llamadas.append(factor)
+            return "listo"
+
+        _resultado, diagnostico = EscalaMalla.Aplicar(
+            16.55737066,
+            True,
+            intentar,
+            arista_maxima=2.14003,
+            paso_mm=0.933,
+            n_caras=1852,
+        )
+        self.assertEqual(llamadas, [10.0])
+        self.assertEqual(diagnostico["factor"], 10.0)
+        self.assertAlmostEqual(diagnostico["dimension_despues_mm"], 165.5737066, places=3)
 
 
 if __name__ == "__main__":

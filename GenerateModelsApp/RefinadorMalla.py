@@ -24,6 +24,7 @@ class RefinadorMalla:
         rondas = int(Configuracion.ValorLimite("surface_subdivision_iterations"))
         epsilon = Configuracion.ValorLimite("normal_epsilon")
 
+        detenida = False
         for _ in range(rondas):
             todas = np.vstack(
                 [faces[:, [0, 1]], faces[:, [1, 2]], faces[:, [2, 0]]]
@@ -37,10 +38,9 @@ class RefinadorMalla:
             if not len(largas):
                 break
             if len(puntos) + len(largas) > limite:
-                raise SuperficieInvalida(
-                    "La subdivisión supera el límite de detalle. "
-                    "Aumente el paso de superficie."
-                )
+                # El tamaño en milímetros ya está decidido. No se parte más.
+                detenida = True
+                break
 
             inicio = len(puntos)
             indices = {
@@ -96,7 +96,7 @@ class RefinadorMalla:
             [faces[:, [0, 1]], faces[:, [1, 2]], faces[:, [2, 0]]]
         )
         aristas = np.unique(np.sort(todas, axis=1), axis=0)
-        if np.any(
+        if not detenida and np.any(
             np.linalg.norm(
                 puntos[aristas[:, 0]] - puntos[aristas[:, 1]],
                 axis=1,
@@ -106,6 +106,12 @@ class RefinadorMalla:
             raise SuperficieInvalida(
                 "No se alcanzó el paso de superficie. "
                 "Aumente el paso o revise las unidades en mm."
+            )
+        if detenida:
+            Registro.Obtener("malla").info(
+                "Subdivisión detenida en %s vértices, por debajo del paso %.3f mm.",
+                len(puntos),
+                pasoMm,
             )
 
         Registro.Obtener("malla").info(

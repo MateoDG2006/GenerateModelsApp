@@ -4,8 +4,8 @@ STL no guarda unidades. Esta clase solo corrige errores decimales inequívocos;
 si ninguna potencia de diez deja la base en el rango configurado, devuelve una
 advertencia para que la persona confirme las dimensiones.
 
-Si la escala elegida no permite alcanzar el paso de superficie, se prueba la
-siguiente potencia de diez, aunque el eje quede por debajo del rango.
+Si otra potencia de diez, todavía dentro del rango, sí alcanza el paso, se usa
+esa. El límite de vértices no encoge la ortesis: la subdivisión se detiene ahí.
 """
 
 from __future__ import annotations
@@ -136,31 +136,27 @@ class EscalaMalla:
                 (factor for factor in candidatos if factor < preferido),
                 reverse=True,
             )
+            # Solo potencias que dejan el eje dentro del rango. Encoger por
+            # debajo de ese rango cambia el tamaño de la ortesis.
             intentos = [preferido, *menores]
-            # Si ninguna escala del rango alcanza el paso, seguir bajando por décadas.
-            siguiente = min(intentos) / 10.0
-            while (
-                siguiente + 1e-15 >= 10.0 ** EscalaMalla.EXPONENTE_MINIMO
-                and len(intentos) < len(menores) + 4
-            ):
-                if not any(math.isclose(siguiente, factor, rel_tol=1e-6) for factor in intentos):
-                    intentos.append(siguiente)
-                siguiente /= 10.0
             diagnostico["factor"] = preferido
             diagnostico["factor_sugerido"] = preferido
             diagnostico["dimension_despues_mm"] = dimension * preferido
             if preferido != 1.0:
                 diagnostico["advertencia"] = ""
-            if n_caras and arista_maxima is not None and paso_mm is not None:
-                seguros = [
-                    factor
-                    for factor in intentos
-                    if EscalaMalla.Presupuesto(
-                        arista_maxima, float(paso_mm), int(n_caras), factor
-                    )
-                ]
-                # No se construye la malla intermedia que revienta la memoria.
-                intentos = seguros or [min(intentos)]
+            if (
+                n_caras
+                and arista_maxima is not None
+                and paso_mm is not None
+                and not EscalaMalla.Presupuesto(
+                    arista_maxima, float(paso_mm), int(n_caras), preferido
+                )
+            ):
+                Registro.Obtener("escala").info(
+                    "La escala x%g puede no alcanzar el paso dentro del límite de vértices. "
+                    "Se mantiene el tamaño.",
+                    preferido,
+                )
         else:
             sugerido = preferidos[0] if candidatos else float(diagnostico["factor"])
             intentos = [1.0]
