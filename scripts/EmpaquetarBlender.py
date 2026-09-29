@@ -6,10 +6,10 @@ import shutil
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def empaquetar():
+def empaquetar(destino=None):
     paquete = ROOT / 'GenerateModelsApp'
-    destino = ROOT / 'GenerateModelsApp.zip'
-    temporal = ROOT / 'GenerateModelsApp.nuevo.zip'
+    destino = Path(destino) if destino is not None else ROOT / 'GenerateModelsApp.zip'
+    temporal = destino.with_name(destino.stem + '.nuevo.zip')
     archivos = sorted(p for p in paquete.rglob('*') if p.is_file()
                       and p.suffix in {'.py', '.json'}
                       and not any(part in {'__pycache__', 'logs'} for part in p.relative_to(paquete).parts))
@@ -21,7 +21,7 @@ def empaquetar():
         assert zipfile.testzip() is None
         assert 'GenerateModelsApp/__init__.py' in zipfile.namelist()
     anterior = ROOT / 'dist' / 'GenerateModelsApp-anterior.zip'
-    if destino.exists() and not anterior.exists():
+    if destino == ROOT / 'GenerateModelsApp.zip' and destino.exists() and not anterior.exists():
         anterior.parent.mkdir(exist_ok=True)
         shutil.copy2(destino, anterior)
     temporal.replace(destino)

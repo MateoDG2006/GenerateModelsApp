@@ -86,9 +86,9 @@ bpy.context.view_layer.objects.active = base
 
 def comprobar_bocas(ob):
     bm = bmesh.new(); bm.from_mesh(ob.data); tree = BVHTree.FromBMesh(bm)
-    # No material sobre el canal principal ni el canal del dedo, por encima del fondo.
+    # El fondo puede engrosarse hasta 3 mm: buscar techos por encima de él.
     for x, y, floor in [(0, 12, 0), (0, 40, 0), (0, 68, 0), (-28, 40, 8), (-36, 40, 8)]:
-        hit = tree.ray_cast(Vector((x, y, 40)), Vector((0, 0, -1)), 40-floor-1)
+        hit = tree.ray_cast(Vector((x, y, 40)), Vector((0, 0, -1)), 40-floor-4)
         assert hit[0] is None, (x, y, tuple(hit[0]))
     bm.free()
 
@@ -119,7 +119,11 @@ bpy.ops.mesh.primitive_cube_add(size=10)
 cube = bpy.context.object
 cube_vertices = len(cube.data.vertices)
 cube_faces = len(cube.data.polygons)
-assert bpy.ops.ortesislab.repair_surface() == {'CANCELLED'}
+try:
+    assert bpy.ops.ortesislab.repair_surface() == {'CANCELLED'}
+except RuntimeError as exc:
+    # Blender 5.2 propaga como RuntimeError el mensaje del operador cancelado.
+    assert 'sólido cerrado' in str(exc).lower()
 assert len(cube.data.vertices) == cube_vertices
 assert len(cube.data.polygons) == cube_faces
 try:

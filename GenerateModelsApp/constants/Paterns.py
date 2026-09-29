@@ -46,7 +46,11 @@ class Patron:
 
     @staticmethod
     def DistanciaSemillas(uv, celda: float, semilla: int, organico: bool):
-        # Retícula hexagonal. Si organico es verdadero, cada semilla se desplaza.
+        """Entrada: puntos XY y celda en mm. Proceso: evalúa semillas próximas
+        y verifica una cota antes de descartar las lejanas. Salida: distancia al
+        borde de celda original. Errores: parámetros geométricos inválidos.
+        Efectos secundarios: ninguno.
+        """
         bajo = uv.min(0) - 3 * celda
         alto = uv.max(0) + 3 * celda
         paso_y = celda * math.sqrt(3) / 2
@@ -63,17 +67,45 @@ class Patron:
                 semillas.append(punto)
         semillas = np.array(semillas)
         resultado = np.empty(len(uv))
+        orden = np.argsort(uv[:, 0], kind="stable")
+        margen = 3 * celda
         for inicio in range(0, len(uv), lote):
-            puntos = uv[inicio : inicio + lote]
-            distancias2 = np.sum((puntos[:, None, :] - semillas[None, :, :]) ** 2, axis=2)
-            cercano = np.argmin(distancias2, axis=1)
-            centro = semillas[cercano]
-            separacion = np.linalg.norm(semillas[None, :, :] - centro[:, None, :], axis=2)
-            denominador = np.where(separacion > epsilon, 2 * separacion, 1)
-            plano = (distancias2 - distancias2[np.arange(len(puntos)), cercano, None]) / denominador
-            plano[np.arange(len(puntos)), cercano] = np.inf
-            resultado[inicio : inicio + len(puntos)] = np.min(plano, axis=1)
+            indices = orden[inicio : inicio + lote]
+            puntos = uv[indices]
+            inferior = puntos.min(axis=0) - margen
+            superior = puntos.max(axis=0) + margen
+            cercanas = semillas[
+                np.all((semillas >= inferior) & (semillas <= superior), axis=1)
+            ]
+            if len(cercanas) < 2:
+                distancias, _radio = Patron._DistanciaPlanos(puntos, semillas, epsilon)
+            else:
+                distancias, radio = Patron._DistanciaPlanos(puntos, cercanas, epsilon)
+                # Una semilla excluida dista al menos margen del punto.
+                # Su bisectriz queda a >= (margen - radio) / 2; si la
+                # distancia local es menor, el resultado ya es exacto.
+                pendientes = radio + 2 * distancias >= margen
+                if np.any(pendientes):
+                    distancias[pendientes], _radio = Patron._DistanciaPlanos(
+                        puntos[pendientes], semillas, epsilon
+                    )
+            resultado[indices] = distancias
         return resultado
+
+    @staticmethod
+    def _DistanciaPlanos(puntos, semillas, epsilon):
+        """Entrada: puntos y semillas XY. Proceso: calcula la bisectriz más
+        cercana de la semilla vecina. Salida: distancias y radio al centro.
+        Efectos secundarios: ninguno.
+        """
+        distancias2 = np.sum((puntos[:, None, :] - semillas[None, :, :]) ** 2, axis=2)
+        cercano = np.argmin(distancias2, axis=1)
+        centro = semillas[cercano]
+        separacion = np.linalg.norm(semillas[None, :, :] - centro[:, None, :], axis=2)
+        denominador = np.where(separacion > epsilon, 2 * separacion, 1)
+        plano = (distancias2 - distancias2[np.arange(len(puntos)), cercano, None]) / denominador
+        plano[np.arange(len(puntos)), cercano] = np.inf
+        return np.min(plano, axis=1), np.sqrt(distancias2[np.arange(len(puntos)), cercano])
 
     @staticmethod
     def Geometricos() -> dict[str, Patron]:

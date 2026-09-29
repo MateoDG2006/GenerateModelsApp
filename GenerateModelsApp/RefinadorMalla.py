@@ -13,6 +13,26 @@ class RefinadorMalla:
     """Divide únicamente las aristas largas y conserva una superficie conectada."""
 
     @staticmethod
+    def PasoPatron(opciones: dict) -> float:
+        """Entrada: parámetros validados. Proceso: limita el paso según el patrón.
+        Salida: paso máximo en mm. Errores: claves ausentes. Efectos: ninguno.
+        """
+        paso = float(opciones["surface_step_mm"])
+        if opciones["pattern"] != "SOLID":
+            paso = min(paso, float(opciones["rib_width_mm"]) / 3, float(opciones["cell_mm"]) / 6)
+        return paso
+
+    @staticmethod
+    def AristaMayor(puntos: np.ndarray, caras: np.ndarray) -> float:
+        """Entrada: malla triangular. Proceso: mide sus aristas. Salida: longitud
+        máxima en mm, o cero para malla vacía. Efectos secundarios: ninguno.
+        """
+        if len(caras) == 0 or len(puntos) == 0:
+            return 0.0
+        pares = np.vstack((caras[:, [0, 1]], caras[:, [1, 2]], caras[:, [2, 0]]))
+        return float(np.linalg.norm(puntos[pares[:, 0]] - puntos[pares[:, 1]], axis=1).max())
+
+    @staticmethod
     def Refinar(vertices, caras, normales, pasoMm: float):
         if not np.isfinite(pasoMm) or pasoMm <= 0:
             raise SuperficieInvalida("El paso de la superficie debe ser positivo y finito.")

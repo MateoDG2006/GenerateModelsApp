@@ -19,13 +19,12 @@ class Complemento:
     def BuildGeometry(source, **options):
         # Vértices y caras del cascarón. No crea el objeto OL_Ortesis.
         from .Modeling import Model3DForPrinting
+        from .RefinadorMalla import RefinadorMalla
         from .Superficie import SuperficieInterior
 
         autoescalar = bool(options.pop("autoescalar", True))
         cfg = Model3DForPrinting.ValidarOpciones(options)
-        paso = cfg["surface_step_mm"]
-        if cfg["pattern"] != "SOLID":
-            paso = min(paso, cfg["rib_width_mm"] / 3, cfg["cell_mm"] / 6)
+        paso = RefinadorMalla.PasoPatron(cfg)
         puntos, caras, normales, borde = SuperficieInterior.Leer(
             source,
             paso_mm=paso,

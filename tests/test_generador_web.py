@@ -2,12 +2,14 @@
 
 import struct
 import unittest
+import io
 from pathlib import Path
 
 import numpy as np
 
 from web.GeneradorWeb import MAXIMO_VARIANTES, GeneradorWeb
 from web.LectorSuperficie import LectorSuperficie
+from GenerateModelsApp.Excepciones import ArchivoSuperficieIlegible, GeometriaInconsistente
 
 
 def base():
@@ -65,6 +67,22 @@ class LoteYStl(unittest.TestCase):
         variantes = GeneradorWeb.Combinaciones(base(), ["VORONOI"], "seed", 1, 3, 1, False)
         self.assertEqual([item["seed"] for item in variantes], [1, 2, 3])
 
+    def test_el_barrido_respeta_el_extremo_y_el_limite_antes_de_crear_variantes(self):
+        variantes = GeneradorWeb.Combinaciones(base(), ["HEX"], "cell_mm", 0, 1, 0.6, False)
+        self.assertEqual([item["cell_mm"] for item in variantes], [0, 0.6])
+        with self.assertRaises(ValueError):
+            GeneradorWeb.Combinaciones(base(), ["HEX"], "cell_mm", 0, 1, 1e-12, False)
+
+    def test_el_barrido_rechaza_no_finitos_y_semillas_fraccionarias(self):
+        for desde, hasta, paso, eje in (
+            (float("-inf"), 20, 5, "cell_mm"),
+            (1, float("nan"), 1, "cell_mm"),
+            (1, 3, 0.4, "seed"),
+        ):
+            with self.subTest(desde=desde, hasta=hasta, paso=paso, eje=eje):
+                with self.assertRaises(ValueError):
+                    GeneradorWeb.Combinaciones(base(), ["VORONOI"], eje, desde, hasta, paso, False)
+
     def test_stl_de_un_triangulo(self):
         vertices = [[0, 0, 0], [1, 0, 0], [0, 1, 0]]
         caras = [[0, 1, 2]]
@@ -115,6 +133,10 @@ class LoteYStl(unittest.TestCase):
         original = GeneradorWeb.Superficie(archivo, autoescalar=False)
         self.assertAlmostEqual(float(np.ptp(original[0], axis=0).max()), 1)
         self.assertIn("Autoescalado desactivado", GeneradorWeb.diagnostico_escala["advertencia"])
+        GeneradorWeb.SuperficieRefinada(archivo, 50, autoescalar=True)
+        GeneradorWeb.SuperficieRefinada(archivo, 50, autoescalar=False)
+        GeneradorWeb.SuperficieRefinada(archivo, 50, autoescalar=True)
+        self.assertEqual(GeneradorWeb.diagnostico_escala["factor"], 100)
 
     def test_permite_desactivar_el_autoescalado_de_la_subida(self):
         vertices = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]]
@@ -137,6 +159,22 @@ class LoteYStl(unittest.TestCase):
         self.assertGreater(len(resultado[1]), 0)
         self.assertTrue(np.isfinite(resultado[3]).all())
         self.assertEqual(info["nombre"], "Test.stl")
+
+    def test_npz_rechaza_indices_fraccionarios_y_expansion_excesiva(self):
+        contenido = io.BytesIO()
+        np.savez_compressed(
+            contenido,
+            vertices=np.array([[0., 0., 0.], [1., 0., 0.], [0., 1., 0.]]),
+            faces=np.array([[0., 1.9, 2.]]),
+            normals=np.tile([0., 0., 1.], (3, 1)),
+        )
+        with self.assertRaises(GeometriaInconsistente):
+            LectorSuperficie.Preparar("superficie.npz", contenido.getvalue())
+        anterior = LectorSuperficie.MAXIMO_DESCOMPRIMIDO_BYTES
+        self.addCleanup(setattr, LectorSuperficie, "MAXIMO_DESCOMPRIMIDO_BYTES", anterior)
+        LectorSuperficie.MAXIMO_DESCOMPRIMIDO_BYTES = 100
+        with self.assertRaises(ArchivoSuperficieIlegible):
+            LectorSuperficie.Preparar("superficie.npz", contenido.getvalue())
 
 
 if __name__ == "__main__":

@@ -2,10 +2,10 @@
 
 El núcleo construye la geometría de una ortesis a partir de una superficie interior abierta, en milímetros. Cambia el patrón, los espesores y el contorno. No predice resistencia ni ajuste sobre una persona.
 
-Ese núcleo lo usan dos sistemas que no se hablan:
+Ese núcleo lo usan dos interfaces:
 
 - El complemento de Blender carga la malla, reconstruye, comprueba y exporta. No calcula coste.
-- La aplicación Reflex, todavía sin pantallas propias, usará el mismo cálculo para producir cada diseño, valorar el material y comparar muchas variantes generadas por iteración.
+- La aplicación Reflex permite cargar una superficie, generar diseños, valorar el material y comparar variantes.
 
 La parte de Blender solo funciona dentro de Blender 5.x. El patrón, el cascarón, los parámetros, el volumen y el material se importan sin Blender. El peso usa la densidad del material; no es el filamento medido por una impresora.
 
@@ -17,7 +17,8 @@ La parte de Blender solo funciona dentro de Blender 5.x. El patrón, el cascaró
 | `scripts/IniciarConsola.py` | Script: saludo del comando de consola. |
 | `OrtesisLab.py` | `register` y `unregister`, que Blender llama por ese nombre, y `Complemento`. |
 | `Interfaz.py` | Ajustes, operadores y panel N. |
-| `Superficie.py` | Lee y subdivide una copia de la superficie seleccionada, sin cerrar contornos. Conserva la carga de NPZ como utilidad explícita. |
+| `Superficie.py` | Lee una copia de la superficie seleccionada y usa `RefinadorMalla` para subdividirla sin cerrar contornos. Conserva la carga de NPZ como utilidad explícita. |
+| `RefinadorMalla.py` | Refinamiento compartido por Blender y la web, incluido el paso adaptado al patrón. |
 | `ReparacionMalla.py` | Clase `ReparadorMalla`: limpia una superficie seleccionada sin añadir espesor ni cerrar aberturas. |
 | `EscalaMalla.py` | Clase `EscalaMalla`: detecta dimensiones fuera de rango y propone una corrección decimal de unidades. |
 | `Objeto.py` | Clase `GeneradorObjeto`: crea `OL_Ortesis` y reconstruye. |
@@ -55,11 +56,15 @@ El esqueleto `3DModelForPrinting` no era un identificador válido en Python. La 
 | Archivo | Uso |
 |---|---|
 | `config/parametros_defecto.json` | Valores iniciales de patrón, celda, nervadura, capa, marco, semilla y resolución. |
-| `config/limites.json` | Mínimo de celda, relación de ancho, voxel, fragmentos, suavizado de normales y tamaño de lote del patrón. |
+| `config/limites.json` | Mínimo de celda, relación de ancho, voxel, fragmentos, tolerancia del recorte y límite de caché de refinamiento de Blender. |
 | `config/registro.json` | Nivel de la consola, nivel del archivo y nombre del log. |
 | `config/comprobacion_geometrica.json` | Resultado ya medido de los dos ejemplos. No son umbrales: si faltan sus claves, la lectura de referencia falla. |
 
 Los JSON se leen una vez y se reutilizan. `Configuracion.Recargar()` vuelve a disco. Un archivo ausente, mal formado o con claves de más o de menos lanza `ConfiguracionInvalida` y no sigue con valores a medias.
+
+Blender y la web aplican el mismo refinamiento y calculan las normales de caras con el mismo criterio. Blender conserva hasta dos superficies refinadas; la clave incluye la geometría original, su escala y la configuración. La web conserva hasta dos superficies originales y dos refinadas. Cambiar parámetros del patrón sobre una base ya refinada evita repetir esa etapa. La generación sigue siendo una operación explícita: todavía no hay vista previa continua mientras se arrastra un control.
+
+El ZIP instalable se genera con `scripts/EmpaquetarBlender.py`. El paquete solo incluye código fuente Python, JSON y `LEEME.md`; no debe incluir `__pycache__` ni bytecode de otra versión de Python. Tras cambiar el código fuente hay que volver a generar e instalar el ZIP para que Blender use la versión actual.
 
 ## Patrones y material
 

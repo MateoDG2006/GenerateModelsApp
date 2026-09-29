@@ -25,11 +25,30 @@ class AnalizadorMalla:
     """Comprueba que la base sea una superficie abierta y mide el borde."""
 
     @staticmethod
+    def NormalesDeCaras(vertices, caras):
+        """Entrada: vértices y triángulos orientados. Proceso: promedia normales
+        ponderadas por área. Salida: una normal por vértice; no modifica entradas.
+        Errores: índices inválidos. Efectos secundarios: ninguno.
+        """
+        puntos = np.asarray(vertices, dtype=np.float64)
+        faces = np.asarray(caras)
+        normales_cara = np.cross(
+            puntos[faces[:, 1]] - puntos[faces[:, 0]],
+            puntos[faces[:, 2]] - puntos[faces[:, 0]],
+        )
+        normales = np.zeros_like(puntos)
+        for posicion in range(3):
+            np.add.at(normales, faces[:, posicion], normales_cara)
+        longitudes = np.linalg.norm(normales, axis=1)
+        epsilon = Configuracion.ValorLimite("normal_epsilon")
+        return normales / np.maximum(longitudes, epsilon)[:, None]
+
+    @staticmethod
     def Preparar(vertices, caras, normales, *, suavizarNormales: bool):
         # Devuelve vértices, triángulos, normales unitarias y distancia al contorno.
         logger = Registro.Obtener("malla")
         puntos = np.asarray(vertices, dtype=np.float64)
-        faces = np.asarray(caras, dtype=np.int32)
+        faces = np.asarray(caras)
         normales_entrada = np.asarray(normales, dtype=np.float64)
         if puntos.ndim != 2 or puntos.shape[1] != 3:
             raise NormalesInvalidas(detalle="Los vértices no tienen forma (n, 3).")
@@ -37,12 +56,15 @@ class AnalizadorMalla:
             raise SuperficieSinCaras()
         if faces.ndim != 2 or faces.shape[1] != 3:
             raise GeometriaInconsistente("La superficie de trabajo debe estar triangulada.")
+        if not np.issubdtype(faces.dtype, np.integer):
+            raise GeometriaInconsistente("Los índices de las caras deben ser enteros.")
         if normales_entrada.shape != puntos.shape:
             raise NormalesInvalidas(detalle="Las normales no coinciden con los vértices.")
         if not np.isfinite(puntos).all() or not np.isfinite(normales_entrada).all():
             raise SuperficieInvalida("La superficie contiene coordenadas o normales no finitas.")
         if faces.min() < 0 or faces.max() >= len(puntos):
             raise GeometriaInconsistente("Las caras hacen referencia a vértices inexistentes.")
+        faces = faces.astype(np.int32, copy=False)
         areas = np.linalg.norm(np.cross(puntos[faces[:, 1]] - puntos[faces[:, 0]],
                                        puntos[faces[:, 2]] - puntos[faces[:, 0]]), axis=1) / 2
         if np.any(areas < Configuracion.ValorLimite("degenerate_area")):

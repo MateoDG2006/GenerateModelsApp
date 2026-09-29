@@ -138,8 +138,10 @@ class Configuracion:
         "min_rounding_width_mm",
         "normal_epsilon",
         "max_surface_vertices",
+        "max_refined_cache_entries",
         "surface_subdivision_iterations",
         "clip_snap_mm",
+        "clip_connect_mm",
         "min_plausible_surface_extent_mm",
         "max_plausible_surface_extent_mm",
     )

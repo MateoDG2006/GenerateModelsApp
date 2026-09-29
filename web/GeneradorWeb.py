@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import struct
 import uuid
+import math
+from decimal import Decimal
 from pathlib import Path
 
 import numpy as np
@@ -57,6 +59,7 @@ class GeneradorWeb:
     """Prepara la superficie incluida y construye cada variante con el paquete."""
 
     _crudas: dict[str, tuple] = {}
+    _maximo_superficies_crudas = 2
     _superficies_refinadas: dict[tuple, tuple] = {}
     _maximo_superficies_refinadas = 2
     diagnostico_escala: dict = {
@@ -66,6 +69,13 @@ class GeneradorWeb:
         "dimension_despues_mm": 0.0,
         "advertencia": "",
     }
+
+    @staticmethod
+    def _GuardarCruda(archivo: str, resultado: tuple) -> tuple:
+        GeneradorWeb._crudas[archivo] = resultado
+        while len(GeneradorWeb._crudas) > GeneradorWeb._maximo_superficies_crudas:
+            GeneradorWeb._crudas.pop(next(iter(GeneradorWeb._crudas)))
+        return resultado
 
     @staticmethod
     def Cruda(archivo: str = ""):
@@ -84,8 +94,7 @@ class GeneradorWeb:
                     )
             except (OSError, ValueError, KeyError) as exc:
                 raise ArchivoSuperficieIlegible(str(ruta), str(exc)) from exc
-            GeneradorWeb._crudas[archivo] = resultado
-            return resultado
+            return GeneradorWeb._GuardarCruda(archivo, resultado)
 
         ruta = Path(__file__).resolve().parent.parent / "assets" / ARCHIVO_SUPERFICIE
         if not ruta.is_file():
@@ -100,8 +109,7 @@ class GeneradorWeb:
         resultado = AnalizadorMalla.Preparar(
             vertices, caras, normales, suavizarNormales=False
         )
-        GeneradorWeb._crudas[""] = resultado
-        return resultado
+        return GeneradorWeb._GuardarCruda("", resultado)
 
     @staticmethod
     def EjeMayor(archivo: str = "") -> float:
@@ -112,6 +120,12 @@ class GeneradorWeb:
 
     @staticmethod
     def Superficie(archivo: str = "", autoescalar: bool = True):
+        resultado, diagnostico = GeneradorWeb._SuperficieConDiagnostico(archivo, autoescalar)
+        GeneradorWeb.diagnostico_escala = diagnostico
+        return resultado
+
+    @staticmethod
+    def _SuperficieConDiagnostico(archivo: str, autoescalar: bool):
         # Aplica o reserva la corrección decimal según la preferencia actual.
         puntos, caras, normales, borde = GeneradorWeb.Cruda(archivo)
         puntos = np.array(puntos, dtype=np.float64, copy=True)
@@ -120,23 +134,30 @@ class GeneradorWeb:
         borde = np.array(borde, dtype=np.float64, copy=True)
         dimension = float(np.max(np.ptp(puntos, axis=0))) if len(puntos) else 0.0
         diagnostico = EscalaMalla.Resolver(dimension, autoescalar=autoescalar)
-        GeneradorWeb.diagnostico_escala = diagnostico
         factor = float(diagnostico["factor"])
         if factor != 1.0:
             puntos *= factor
             borde *= factor
-        return puntos, caras, normales, borde
+        return (puntos, caras, normales, borde), diagnostico
 
     @staticmethod
     def SuperficieRefinada(archivo: str, pasoMm: float, autoescalar: bool = True):
-        clave = (archivo, bool(autoescalar), round(float(pasoMm), 6))
+        resultado, diagnostico = GeneradorWeb._SuperficieRefinadaConDiagnostico(
+            archivo, pasoMm, autoescalar
+        )
+        GeneradorWeb.diagnostico_escala = diagnostico
+        return resultado
+
+    @staticmethod
+    def _SuperficieRefinadaConDiagnostico(archivo: str, pasoMm: float, autoescalar: bool):
+        clave = (archivo, bool(autoescalar), float(pasoMm))
         if clave not in GeneradorWeb._superficies_refinadas:
             puntos, caras, normales, _borde = GeneradorWeb.Cruda(archivo)
             puntos = np.array(puntos, dtype=np.float64, copy=True)
             caras = np.array(caras, dtype=np.int32, copy=True)
             normales = np.array(normales, dtype=np.float64, copy=True)
             dimension = float(np.max(np.ptp(puntos, axis=0))) if len(puntos) else 0.0
-            arista = GeneradorWeb._AristaMayor(puntos, caras)
+            arista = RefinadorMalla.AristaMayor(puntos, caras)
 
             def refinar(factor: float):
                 copia = puntos if factor == 1.0 else puntos * factor
@@ -150,8 +171,7 @@ class GeneradorWeb:
                 paso_mm=pasoMm,
                 n_caras=len(caras),
             )
-            GeneradorWeb.diagnostico_escala = diagnostico
-            GeneradorWeb._superficies_refinadas[clave] = refinado
+            GeneradorWeb._superficies_refinadas[clave] = (refinado, diagnostico)
             while (
                 len(GeneradorWeb._superficies_refinadas)
                 > GeneradorWeb._maximo_superficies_refinadas
@@ -160,13 +180,6 @@ class GeneradorWeb:
                 if primera != clave:
                     GeneradorWeb._superficies_refinadas.pop(primera)
         return GeneradorWeb._superficies_refinadas[clave]
-
-    @staticmethod
-    def _AristaMayor(puntos, caras) -> float:
-        if len(caras) == 0 or len(puntos) == 0:
-            return 0.0
-        pares = np.vstack((caras[:, [0, 1]], caras[:, [1, 2]], caras[:, [2, 0]]))
-        return float(np.linalg.norm(puntos[pares[:, 0]] - puntos[pares[:, 1]], axis=1).max())
 
     @staticmethod
     def GuardarSuperficie(
@@ -203,28 +216,25 @@ class GeneradorWeb:
             normals=normales,
             border=borde,
         )
-        GeneradorWeb._crudas[archivo] = resultado
+        GeneradorWeb._GuardarCruda(archivo, resultado)
         return archivo, info
 
     @staticmethod
     def Crear(opciones: dict, superficieArchivo: str = "", autoescalar: bool = True) -> dict:
         # Devuelve la ficha visible y deja el STL donde Reflex puede servirlo.
         if opciones["pattern"] == "SOLID":
-            puntos, caras, normales, borde = GeneradorWeb.Superficie(
+            superficie, diagnostico = GeneradorWeb._SuperficieConDiagnostico(
                 superficieArchivo,
                 autoescalar=autoescalar,
             )
         else:
-            paso = min(
-                float(opciones["surface_step_mm"]),
-                float(opciones["rib_width_mm"]) / 3.0,
-                float(opciones["cell_mm"]) / 6.0,
-            )
-            puntos, caras, normales, borde = GeneradorWeb.SuperficieRefinada(
+            paso = RefinadorMalla.PasoPatron(opciones)
+            superficie, diagnostico = GeneradorWeb._SuperficieRefinadaConDiagnostico(
                 superficieArchivo,
                 paso,
                 autoescalar=autoescalar,
             )
+        puntos, caras, normales, borde = superficie
         modelo = Model3DForPrinting(PETG())
         vertices, faces, cfg, _interiores, _caras = modelo.Construir(
             puntos, caras, normales, borde, **opciones
@@ -244,7 +254,7 @@ class GeneradorWeb:
             precio=precio,
             error="",
         )
-        factor = float(GeneradorWeb.diagnostico_escala.get("factor", 1))
+        factor = float(diagnostico.get("factor", 1))
         if factor != 1.0:
             ficha["detalle"] += f" · escala ×{factor:g}"
         return ficha
@@ -322,7 +332,10 @@ class GeneradorWeb:
         paso: float,
         ambos_revestimientos: bool,
     ) -> list[dict]:
-        # Cruza los patrones elegidos con un barrido numérico y, si se pide, la capa.
+        """Entrada: patrones, rango y paso. Proceso: acota el barrido antes de
+        crear variantes. Salida: opciones dentro del rango. Errores: ValueError
+        ante parámetros inválidos o lote excesivo. Efectos: ninguno.
+        """
         if not patrones:
             raise ValueError("Elija al menos un patrón.")
         desconocidos = [patron for patron in patrones if patron not in PATRONES]
@@ -331,16 +344,35 @@ class GeneradorWeb:
         if eje and eje != "ninguno" and eje not in EJES:
             raise ValueError("Ese parámetro no forma parte del complemento.")
 
-        valores: list[float] | None = None
+        multiplicador = sum(1 if patron == "SOLID" or not ambos_revestimientos else 2 for patron in patrones)
+        valores: list[float | int] | None = None
         if eje and eje != "ninguno":
+            if not all(math.isfinite(valor) for valor in (desde, hasta, paso)):
+                raise ValueError("El barrido requiere números finitos.")
             if paso <= 0:
                 raise ValueError("El paso del barrido tiene que ser mayor que cero.")
             if desde > hasta:
                 raise ValueError("El valor inicial no puede ser mayor que el final.")
-            cantidad = int(round((hasta - desde) / paso)) + 1
-            valores = [desde + indice * paso for indice in range(cantidad)]
             if eje == "seed":
-                valores = [float(int(round(valor))) for valor in valores]
+                if desde < 0 or not all(valor.is_integer() for valor in (desde, hasta, paso)):
+                    raise ValueError("El barrido de semillas requiere enteros no negativos y paso entero.")
+            inicio = Decimal(str(desde))
+            final = Decimal(str(hasta))
+            incremento = Decimal(str(paso))
+            maximo_valores = MAXIMO_VARIANTES // multiplicador
+            if final - inicio >= incremento * maximo_valores:
+                raise ValueError(
+                    f"El lote tiene más de {MAXIMO_VARIANTES} variantes. "
+                    "Amplíe el paso o quite un patrón."
+                )
+            cantidad = int((final - inicio) // incremento) + 1
+            valores = [
+                int(inicio + indice * incremento) if eje == "seed"
+                else float(inicio + indice * incremento)
+                for indice in range(cantidad)
+            ]
+        elif multiplicador > MAXIMO_VARIANTES:
+            raise ValueError(f"El lote supera el máximo de {MAXIMO_VARIANTES} variantes.")
 
         revestimientos = [True, False] if ambos_revestimientos else [bool(base["liner"])]
         variantes = []
@@ -354,7 +386,7 @@ class GeneradorWeb:
                     if patron != "SOLID":
                         opciones["liner"] = capa
                     if numero is not None:
-                        opciones[eje] = int(numero) if eje == "seed" else float(numero)
+                        opciones[eje] = numero
                     variantes.append(opciones)
         if not variantes:
             raise ValueError("No hay variantes con esos parámetros.")

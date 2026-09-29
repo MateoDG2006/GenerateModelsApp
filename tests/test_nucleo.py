@@ -97,6 +97,14 @@ class GeometriaOriginal(unittest.TestCase):
                         obtenido = Patron.Obtener(codigo).Distancia(self.puntos, 15.0, angulo, semilla)
                         np.testing.assert_allclose(obtenido, esperado, rtol=0, atol=0)
 
+    def test_distancia_de_semillas_conserva_el_resultado_en_superficie_extensa(self):
+        puntos = np.random.default_rng(31).uniform(-150, 150, size=(400, 3))
+        for codigo in ("HEX", "VORONOI"):
+            with self.subTest(codigo=codigo):
+                esperado = ReferenciaOriginal.Distancia(puntos, codigo, 8.0, 19.0, 7)
+                obtenido = Patron.Obtener(codigo).Distancia(puntos, 8.0, 19.0, 7)
+                np.testing.assert_allclose(obtenido, esperado, rtol=0, atol=0)
+
     def test_recorte_y_cascaron_conservan_el_original(self):
         triangulos = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
         normales = np.tile(np.array([0.0, 0.0, 1.0]), (4, 1))
@@ -155,6 +163,23 @@ class GeometriaOriginal(unittest.TestCase):
                 np.tile([0.0, 0.0, 1.0], (3, 1)),
                 np.array([-1.0, -1.0, -1.0]),
             )
+
+    def test_recorte_no_une_dos_regiones_solo_por_un_vertice(self):
+        puntos = np.array([[0., 0., 0.], [1., 0., 0.], [0., 1., 0.],
+                           [-1., 0., 0.], [0., -1., 0.]])
+        caras = np.array([[0, 1, 2], [0, 2, 3], [0, 3, 4], [0, 4, 1]])
+        normales = np.tile([0., 0., 1.], (5, 1))
+        escalar = np.array([0., -1., 1., -1., 1.])
+        vertices, recortadas, normales_recortadas = Cascaron.Recortar(
+            puntos, caras, normales, escalar
+        )
+        finales, caras_finales = Cascaron.Engrosar(
+            vertices, recortadas, normales_recortadas, np.ones(len(vertices))
+        )
+        aristas = [tuple(sorted((a, b))) for cara in caras_finales
+                   for a, b in zip(cara, cara[1:] + cara[:1])]
+        _, cuentas = np.unique(aristas, axis=0, return_counts=True)
+        self.assertTrue(np.all(cuentas == 2))
 
 
 class ParametrosYMaterial(unittest.TestCase):

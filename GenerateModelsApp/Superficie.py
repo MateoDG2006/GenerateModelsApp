@@ -5,11 +5,13 @@ Este módulo sí depende de Blender. El análisis geométrico está en Analizado
 
 from __future__ import annotations
 
+import hashlib
+from collections import OrderedDict
 from pathlib import Path
 
 import numpy as np
 
-from .ApiBlender import bpy, bmesh
+from .ApiBlender import bpy
 from .EscalaMalla import EscalaMalla
 from .Excepciones import (
     ArchivoSuperficieIlegible,
@@ -18,8 +20,10 @@ from .Excepciones import (
     ModificadoresSinAplicar,
     SuperficieNoEsMalla,
     SuperficieInvalida,
+    SuperficieSinCaras,
 )
 from .Malla import AnalizadorMalla
+from .RefinadorMalla import RefinadorMalla
 from .constants.Nombres import (
     ARCHIVO_SUPERFICIE,
     ATTR_NORMAL,
@@ -34,6 +38,7 @@ from .util.Utilidades import Configuracion, Registro
 
 class SuperficieInterior:
     """Prepara una copia de la superficie elegida, sin cerrar sus aberturas."""
+    _refinadas: OrderedDict[tuple, tuple] = OrderedDict()
 
     diagnostico_escala: dict = {
         "factor": 1.0,
@@ -143,21 +148,41 @@ class SuperficieInterior:
         malla.vertices.foreach_get("co", coordenadas)
         puntos = coordenadas.reshape(-1, 3)
         caras = np.array([triangulo.vertices[:] for triangulo in malla.loop_triangles], dtype=np.int32)
-        # Siempre leer caras y normales actuales: un atributo antiguo o una caché
-        # basada en sumas puede ignorar la apertura recién editada del dedo.
+        if len(caras) == 0:
+            raise SuperficieSinCaras()
+        # El STL web reconstruye normales ponderadas por área. Usar la misma
+        # regla evita desplazamientos distintos en superficies curvas.
+        normales = AnalizadorMalla.NormalesDeCaras(puntos, caras)
         if paso_mm is None:
-            normales = np.array([vertice.normal[:] for vertice in malla.vertices])
             puntos, _factor = SuperficieInterior._CorregirUnidades(puntos, autoescalar)
             return AnalizadorMalla.Preparar(puntos, caras, normales, suavizarNormales=False)
         if not np.isfinite(paso_mm) or paso_mm <= 0:
             raise SuperficieInvalida("El paso de la superficie debe ser positivo y finito.")
 
         dimension = float(np.max(np.ptp(puntos, axis=0))) if len(puntos) else 0.0
-        arista = SuperficieInterior._AristaMayor(puntos, caras)
+        arista = RefinadorMalla.AristaMayor(puntos, caras)
+        huella = hashlib.blake2b(digest_size=16)
+        huella.update(puntos.tobytes())
+        huella.update(caras.tobytes())
+        clave_malla = huella.digest()
+        limites = tuple(sorted(Configuracion.Limites().items()))
+
+        def refinar(factor):
+            clave = (clave_malla, limites, float(factor), float(paso_mm))
+            cache = SuperficieInterior._refinadas
+            if clave in cache:
+                cache.move_to_end(clave)
+                return tuple(np.array(arreglo, copy=True) for arreglo in cache[clave])
+            refinada = RefinadorMalla.Refinar(puntos * factor, caras, normales, paso_mm)
+            cache[clave] = tuple(np.array(arreglo, copy=True) for arreglo in refinada)
+            while len(cache) > int(Configuracion.ValorLimite("max_refined_cache_entries")):
+                cache.popitem(last=False)
+            return refinada
+
         resultado, diagnostico = EscalaMalla.Aplicar(
             dimension,
             autoescalar,
-            lambda factor: SuperficieInterior._Subdividir(malla, factor, paso_mm),
+            refinar,
             arista_maxima=arista,
             paso_mm=paso_mm,
             n_caras=len(caras),
@@ -179,84 +204,3 @@ class SuperficieInterior:
             paso_mm,
         )
         return resultado
-
-    @staticmethod
-    def _AristaMayor(puntos: np.ndarray, caras: np.ndarray) -> float:
-        if len(caras) == 0 or len(puntos) == 0:
-            return 0.0
-        pares = np.vstack((caras[:, [0, 1]], caras[:, [1, 2]], caras[:, [2, 0]]))
-        return float(np.linalg.norm(puntos[pares[:, 0]] - puntos[pares[:, 1]], axis=1).max())
-
-    @staticmethod
-    def _Subdividir(malla, factor: float, paso_mm: float):
-        # Cada intento parte de la malla original. La base de la escena no cambia.
-        bm = bmesh.new()
-        try:
-            bm.from_mesh(malla)
-            SuperficieInterior._Tablas(bm)
-            if factor != 1.0:
-                for vertice in bm.verts:
-                    vertice.co *= factor
-            SuperficieInterior._Triangulo(bm)
-            limite = int(Configuracion.ValorLimite("max_surface_vertices"))
-            rondas = int(Configuracion.ValorLimite("surface_subdivision_iterations"))
-            detenida = False
-            for _ in range(rondas):
-                SuperficieInterior._Tablas(bm)
-                largas = [e for e in bm.edges if e.calc_length() > paso_mm * 1.001]
-                if not largas:
-                    break
-                # El operador revienta Blender si la pasada cuadruplica una malla ya grande.
-                if (
-                    len(bm.verts) + len(largas) > limite
-                    or len(largas) > limite // 2
-                    or (
-                        len(bm.edges) > 0
-                        and len(largas) * 2 > len(bm.edges)
-                        and len(bm.faces) * 4 > limite
-                    )
-                ):
-                    detenida = True
-                    break
-                bmesh.ops.subdivide_edges(bm, edges=largas, cuts=1, use_grid_fill=True)
-                SuperficieInterior._Tablas(bm)
-                SuperficieInterior._Triangulo(bm)
-            SuperficieInterior._Tablas(bm)
-            if not detenida and (
-                len(bm.verts) > limite
-                or any(e.calc_length() > paso_mm * 1.001 for e in bm.edges)
-            ):
-                raise SuperficieInvalida(
-                    "No se alcanzó el paso de superficie. Aumente el paso o revise las unidades en mm."
-                )
-            if detenida:
-                Registro.Obtener("superficie").info(
-                    "Subdivisión detenida en %s vértices, por debajo del paso %.3f mm.",
-                    len(bm.verts),
-                    paso_mm,
-                )
-            bm.normal_update()
-            bm.verts.index_update()
-            bm.faces.index_update()
-            SuperficieInterior._Tablas(bm)
-            puntos = np.array([v.co[:] for v in bm.verts])
-            caras = np.array([[v.index for v in f.verts] for f in bm.faces], dtype=np.int32)
-            normales = np.array([v.normal[:] for v in bm.verts])
-        finally:
-            bm.free()
-        return AnalizadorMalla.Preparar(puntos, caras, normales, suavizarNormales=True)
-
-    @staticmethod
-    def _Tablas(bm) -> None:
-        # Sin esto, la pasada siguiente recorre punteros ya liberados y Blender se cierra.
-        bm.verts.ensure_lookup_table()
-        bm.edges.ensure_lookup_table()
-        bm.faces.ensure_lookup_table()
-
-    @staticmethod
-    def _Triangulo(bm) -> None:
-        SuperficieInterior._Tablas(bm)
-        pendientes = [cara for cara in bm.faces if len(cara.verts) != 3]
-        if pendientes:
-            bmesh.ops.triangulate(bm, faces=pendientes)
-            SuperficieInterior._Tablas(bm)

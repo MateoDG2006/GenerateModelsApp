@@ -12,6 +12,7 @@ from .Excepciones import (
     ResolucionDemasiadoFina,
 )
 from .Modeling import Model3DForPrinting
+from .RefinadorMalla import RefinadorMalla
 from .Superficie import SuperficieInterior
 from .constants.Nombres import (
     ALCANCE,
@@ -81,9 +82,7 @@ class GeneradorObjeto:
         logger = Registro.Obtener("objeto")
         autoescalar = bool(options.pop("autoescalar", True))
         opciones = Model3DForPrinting.ValidarOpciones(options)
-        paso = opciones["surface_step_mm"]
-        if opciones["pattern"] != "SOLID":
-            paso = min(paso, opciones["rib_width_mm"] / 3, opciones["cell_mm"] / 6)
+        paso = RefinadorMalla.PasoPatron(opciones)
         puntos, caras, normales, borde = SuperficieInterior.Leer(
             source,
             paso_mm=paso,

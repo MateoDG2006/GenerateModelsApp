@@ -6,6 +6,7 @@ Los arreglos de la malla no viven aquí: el visor los lee del archivo STL.
 from __future__ import annotations
 
 import asyncio
+import math
 
 import reflex as rx
 
@@ -14,6 +15,7 @@ from GenerateModelsApp.Excepciones import OrtesisLabError
 from GenerateModelsApp.util.Utilidades import Configuracion, Registro
 
 from .GeneradorWeb import EJES, MAXIMO_VARIANTES, GeneradorWeb
+from .LectorSuperficie import LectorSuperficie
 
 ID_SUBIDA_SUPERFICIE = "superficie-entrada"
 
@@ -186,7 +188,7 @@ class EstadoApp(rx.State):
         self.superficie_error = ""
         archivo = archivos[0]
         try:
-            contenido = await archivo.read()
+            contenido = await archivo.read(LectorSuperficie.MAXIMO_BYTES + 1)
             nombre_interno, info = await asyncio.to_thread(
                 GeneradorWeb.GuardarSuperficie,
                 archivo.name,
@@ -281,6 +283,12 @@ class EstadoApp(rx.State):
                 self.ocupado = False
                 self._trabajando = 0
                 return
+            except Exception:
+                Registro.Obtener("web").exception("Fallo al preparar el lote")
+                self.mensaje = "No se pudo preparar la generación."
+                self.ocupado = False
+                self._trabajando = 0
+                return
             self.total = len(variantes)
             self.resultados = []
             self.vistas = []
@@ -289,35 +297,39 @@ class EstadoApp(rx.State):
             autoescalar = self.autoescalar_superficie
 
         fichas = []
-        for indice, opciones in enumerate(variantes, start=1):
-            try:
-                ficha = await asyncio.to_thread(
-                    GeneradorWeb.Crear,
-                    opciones,
-                    superficie_archivo,
-                    autoescalar,
-                )
-            except OrtesisLabError as exc:
-                ficha = GeneradorWeb.FichaError(opciones, exc)
-            except Exception:
-                Registro.Obtener("web").exception("Fallo no previsto al construir una variante")
-                ficha = GeneradorWeb.FichaError(opciones, RuntimeError("fallo"))
-            fichas.append(ficha)
+        try:
+            for indice, opciones in enumerate(variantes, start=1):
+                try:
+                    ficha = await asyncio.to_thread(
+                        GeneradorWeb.Crear,
+                        opciones,
+                        superficie_archivo,
+                        autoescalar,
+                    )
+                except OrtesisLabError as exc:
+                    ficha = GeneradorWeb.FichaError(opciones, exc)
+                except Exception:
+                    Registro.Obtener("web").exception("Fallo no previsto al construir una variante")
+                    ficha = GeneradorWeb.FichaError(opciones, RuntimeError("fallo"))
+                fichas.append(ficha)
+                async with self:
+                    self.hechos = indice
+                    self.resultados = list(fichas)
+                    self.mensaje = f"{indice} de {len(variantes)}"
+                    if ficha["archivo"] and not self.archivo:
+                        self._Mostrar(ficha)
             async with self:
-                self.hechos = indice
-                self.resultados = list(fichas)
-                self.mensaje = f"{indice} de {len(variantes)}"
-                if ficha["archivo"] and not self.archivo:
-                    self._Mostrar(ficha)
-
-        async with self:
-            self.ocupado = False
-            self._trabajando = 0
-            errores = sum(1 for ficha in fichas if ficha["error"])
-            if errores:
-                self.mensaje = f"Listo. {errores} de {len(fichas)} no se pudieron construir."
-            else:
-                self.mensaje = f"Listo. {len(fichas)} variante{'s' if len(fichas) != 1 else ''}."
+                errores = sum(1 for ficha in fichas if ficha["error"])
+                if errores:
+                    self.mensaje = f"Listo. {errores} de {len(fichas)} no se pudieron construir."
+                else:
+                    self.mensaje = f"Listo. {len(fichas)} variante{'s' if len(fichas) != 1 else ''}."
+        finally:
+            async with self:
+                if self.hechos < self.total:
+                    self.mensaje = "Generación interrumpida; puede intentarlo de nuevo."
+                self.ocupado = False
+                self._trabajando = 0
 
     @rx.event
     def Ver(self, identificador: str):
@@ -412,13 +424,18 @@ class EstadoApp(rx.State):
             )
             if activo
         ]
+        desde, hasta, paso = (0.0, 0.0, 1.0) if self.eje in ("", "ninguno") else (
+            self._Numero(self.desde, "Valor inicial"),
+            self._Numero(self.hasta, "Valor final"),
+            self._Numero(self.paso, "Paso"),
+        )
         return GeneradorWeb.Combinaciones(
             base,
             patrones,
             self.eje,
-            self._Numero(self.desde, "Valor inicial"),
-            self._Numero(self.hasta, "Valor final"),
-            self._Numero(self.paso, "Paso"),
+            desde,
+            hasta,
+            paso,
             self.ambos_revestimientos,
         )
 
@@ -453,6 +470,8 @@ class EstadoApp(rx.State):
             valor = float(limpio)
         except ValueError as exc:
             raise ValueError(f"{etiqueta} tiene que ser un número.") from exc
+        if not math.isfinite(valor):
+            raise ValueError(f"{etiqueta} tiene que ser un número finito.")
         return valor
 
 

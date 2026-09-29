@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import struct
+import zipfile
 from pathlib import Path
 
 import numpy as np
@@ -18,6 +19,7 @@ class LectorSuperficie:
     """Convierte STL o NPZ en los arreglos que consume el núcleo geométrico."""
 
     MAXIMO_BYTES = 50 * 1024 * 1024
+    MAXIMO_DESCOMPRIMIDO_BYTES = 128 * 1024 * 1024
     EXTENSIONES = {".stl", ".npz"}
 
     @staticmethod
@@ -87,11 +89,17 @@ class LectorSuperficie:
     @staticmethod
     def _Npz(contenido: bytes, nombre: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         try:
+            with zipfile.ZipFile(io.BytesIO(contenido)) as archivo:
+                total = sum(entrada.file_size for entrada in archivo.infolist())
+                if total > LectorSuperficie.MAXIMO_DESCOMPRIMIDO_BYTES:
+                    raise ArchivoSuperficieIlegible(
+                        nombre, "El NPZ descomprimido supera el límite permitido."
+                    )
             with np.load(io.BytesIO(contenido), allow_pickle=False) as datos:
                 vertices = np.asarray(datos["vertices"], dtype=np.float64)
-                caras = np.asarray(datos["faces"], dtype=np.int32)
+                caras = np.asarray(datos["faces"])
                 normales = np.asarray(datos["normals"], dtype=np.float64)
-        except (OSError, ValueError, KeyError) as exc:
+        except (OSError, ValueError, KeyError, zipfile.BadZipFile) as exc:
             raise ArchivoSuperficieIlegible(nombre, str(exc)) from exc
         return vertices, caras, normales
 
@@ -150,14 +158,4 @@ class LectorSuperficie:
 
     @staticmethod
     def _Normales(vertices: np.ndarray, caras: np.ndarray) -> np.ndarray:
-        triangulos = vertices[caras]
-        normales_cara = np.cross(
-            triangulos[:, 1] - triangulos[:, 0],
-            triangulos[:, 2] - triangulos[:, 0],
-        )
-        normales = np.zeros_like(vertices)
-        for posicion in range(3):
-            np.add.at(normales, caras[:, posicion], normales_cara)
-        longitudes = np.linalg.norm(normales, axis=1)
-        epsilon = Configuracion.ValorLimite("normal_epsilon")
-        return normales / np.maximum(longitudes, epsilon)[:, None]
+        return AnalizadorMalla.NormalesDeCaras(vertices, caras)

@@ -33,8 +33,10 @@ class Cascaron:
                 "El recorte recibió arreglos de distinta longitud.",
                 detalle=f"puntos={len(puntos)}, escalar={len(valores)}, normales={normales.shape}",
             )
-        # Evita cuñas por intersecciones casi coincidentes al pasar a float32 en Blender.
-        valores = np.where(np.abs(valores) < Configuracion.ValorLimite("clip_snap_mm"), 0.0, valores)
+        # Un cero exacto puede unir dos regiones solo en un vértice. Darle un
+        # interior mínimo evita aristas verticales compartidas por cuatro muros.
+        margen = Configuracion.ValorLimite("clip_connect_mm")
+        valores = np.where(np.abs(valores) < margen, margen, valores)
         epsilon = Configuracion.ValorLimite("normal_epsilon")
         verts = []
         normals = []
@@ -73,7 +75,7 @@ class Cascaron:
 
         for face in caras:
             poly = []
-            for a, b in zip(face, np.roll(face, -1)):
+            for a, b in ((face[0], face[1]), (face[1], face[2]), (face[2], face[0])):
                 a, b = int(a), int(b)
                 inside = valores[a] >= 0
                 other = valores[b] >= 0
@@ -151,21 +153,26 @@ class Cascaron:
 
     @staticmethod
     def VolumenMm3(vertices, faces) -> float:
-        # Volumen del cascarón antes del voxel. No es el filamento de la impresora.
+        """Entrada: vértices y caras del cascarón en mm. Proceso: triangula
+        cada polígono y suma volúmenes orientados en NumPy. Salida: mm³.
+        Errores: geometría sin caras. Efectos: registro de orientación.
+        """
         logger = Registro.Obtener("cascaron")
         puntos = np.asarray(vertices, dtype=np.float64)
-        total = 0.0
-        triangulos = 0
+        triangulos = []
         for cara in faces:
             indices = [int(indice) for indice in cara]
             if len(indices) < 3:
                 continue
             for posicion in range(1, len(indices) - 1):
-                a, b, c = indices[0], indices[posicion], indices[posicion + 1]
-                total += float(np.dot(puntos[a], np.cross(puntos[b], puntos[c])))
-                triangulos += 1
-        if triangulos == 0:
+                triangulos.append((indices[0], indices[posicion], indices[posicion + 1]))
+        if not triangulos:
             raise GeometriaInconsistente("No hay caras para calcular el volumen.")
+        caras_triangulares = np.asarray(triangulos, dtype=np.int32)
+        a = puntos[caras_triangulares[:, 0]]
+        b = puntos[caras_triangulares[:, 1]]
+        c = puntos[caras_triangulares[:, 2]]
+        total = float(np.einsum("ij,ij->", a, np.cross(b, c), optimize=True))
         volumen = abs(total) / 6.0
         if total < 0:
             logger.debug("El cascarón tiene orientación negativa; el volumen se toma en valor absoluto.")
