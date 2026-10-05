@@ -20,6 +20,8 @@
   "surface_subdivision_iterations": 16,
   "clip_snap_mm": 0.0001,
   "clip_connect_mm": 0.005,
+  "border_smooth_wavelength_mm": 8.0,
+  "border_smooth_max_mm": 3.0,
   "min_plausible_surface_extent_mm": 20,
   "max_plausible_surface_extent_mm": 1000
 }

@@ -27,6 +27,7 @@ La parte de Blender solo funciona dentro de Blender 5.x. El patrón, el cascaró
 | `Modeling.py` | Clase `Model3DForPrinting`. |
 | `Malla.py` | Clase `AnalizadorMalla`. Sin Blender. |
 | `Cascaron.py` | Clase `Cascaron`: recorte, cierre y volumen. |
+| `SuavizadoBorde.py` | Clase `SuavizadoBorde`: quita los dientes del contorno exterior antes del espesor. |
 | `constants/Paterns.py` | Clase `Patron` y el catálogo. |
 | `constants/Materials.py` | Clase `Material` y `PETG`. |
 | `constants/Nombres.py` | Nombres de objetos y propiedades. |
@@ -44,19 +45,20 @@ El esqueleto `3DModelForPrinting` no era un identificador válido en Python. La 
 2. Se rechaza una malla que no sea de tipo MESH, con modificadores sin aplicar, con escala distinta de 1 o sin caras.
 3. Se exige una superficie abierta y conectada, sin caras duplicadas/degeneradas, con orientación consistente y normales finitas. Los vértices sueltos siempre se rechazan. Se leen las caras y normales actuales, sin caché de sumas ni atributos antiguos de offset.
 4. Se validan parámetros contra los JSON. Una copia se subdivide según `surface_step_mm`, limitada además por ancho y tamaño de celda; la malla original no cambia.
-5. El patrón calcula la distancia al eje en la proyección XY. El marco y la banda maciza ensanchan esa zona.
-6. Con capa interior se varía el espesor. Sin ella se recorta la superficie. En macizo el espesor es uniforme.
-7. `Cascaron.Engrosar` duplica las caras y une cada borde únicamente con su copia. No rellena contornos ni conecta labios opuestos. `flip_normals` invierte normales y orientación de caras; `Cerrar` sigue siendo un alias compatible.
-8. Si la reconstrucción está activa y el voxel queda por debajo de 0,15 mm, se aborta antes de crear la malla.
-9. Solo si se activa `repair` se aplica voxel (desactivado por defecto). Puede alterar aberturas estrechas. Si las piezas separadas superan el umbral (50 vértices o el 0,5 %, el que sea mayor), se aborta. Los restos pequeños se eliminan y se suaviza.
-10. La comprobación y la exportación son pasos aparte. Exportar un STL con la malla en mal estado está bloqueado.
+5. `SuavizadoBorde` recorre cada bucle del contorno y elimina las ondas más cortas que `border_smooth_wavelength_mm` (8 mm), con un tope de `border_smooth_max_mm` (3 mm). El interior no se mueve. Si el borde cambió, se vuelve a medir la distancia geodésica para que el marco siga el canto ya liso.
+6. El patrón calcula la distancia al eje en la proyección XY. El marco y la banda maciza ensanchan esa zona.
+7. Con capa interior se varía el espesor. Sin ella se recorta la superficie. En macizo el espesor es uniforme.
+8. `Cascaron.Engrosar` duplica las caras y une cada borde únicamente con su copia. No rellena contornos ni conecta labios opuestos. `flip_normals` invierte normales y orientación de caras; `Cerrar` sigue siendo un alias compatible.
+9. Si la reconstrucción está activa y el voxel queda por debajo de 0,15 mm, se aborta antes de crear la malla.
+10. Solo si se activa `repair` se aplica voxel (desactivado por defecto). Puede alterar aberturas estrechas. Si las piezas separadas superan el umbral (50 vértices o el 0,5 %, el que sea mayor), se aborta. Los restos pequeños se eliminan y se suaviza.
+11. La comprobación y la exportación son pasos aparte. Exportar un STL con la malla en mal estado está bloqueado.
 
 ## Configuración
 
 | Archivo | Uso |
 |---|---|
 | `config/parametros_defecto.json` | Valores iniciales de patrón, celda, nervadura, capa, marco, semilla y resolución. |
-| `config/limites.json` | Mínimo de celda, relación de ancho, voxel, fragmentos, tolerancia del recorte y límite de caché de refinamiento de Blender. |
+| `config/limites.json` | Mínimo de celda, relación de ancho, voxel, fragmentos, tolerancia del recorte, suavizado del contorno y límite de caché de refinamiento de Blender. |
 | `config/registro.json` | Nivel de la consola, nivel del archivo y nombre del log. |
 | `config/comprobacion_geometrica.json` | Resultado ya medido de los dos ejemplos. No son umbrales: si faltan sus claves, la lectura de referencia falla. |
 

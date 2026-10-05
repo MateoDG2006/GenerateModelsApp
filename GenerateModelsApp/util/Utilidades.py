@@ -142,6 +142,8 @@ class Configuracion:
         "surface_subdivision_iterations",
         "clip_snap_mm",
         "clip_connect_mm",
+        "border_smooth_wavelength_mm",
+        "border_smooth_max_mm",
         "min_plausible_surface_extent_mm",
         "max_plausible_surface_extent_mm",
     )

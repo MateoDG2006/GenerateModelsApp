@@ -13,6 +13,8 @@ import math
 import numpy as np
 
 from .Cascaron import Cascaron
+from .Malla import AnalizadorMalla
+from .SuavizadoBorde import SuavizadoBorde
 from .Excepciones import (
     BordeNegativo,
     CeldaDemasiadoPequena,
@@ -118,7 +120,13 @@ class Model3DForPrinting:
         if cfg["flip_normals"]:
             normales_superficie = -normales_superficie
             faces = faces[:, ::-1]
-        borde = np.asarray(distanciaBorde, dtype=np.float64)
+        puntos, normales_superficie, desplazamiento = SuavizadoBorde.Aplicar(
+            puntos, faces, normales_superficie
+        )
+        if desplazamiento > 0:
+            borde = AnalizadorMalla.DistanciaAlContorno(puntos, faces)
+        else:
+            borde = np.asarray(distanciaBorde, dtype=np.float64)
         patron = Patron.Geometricos()[cfg["pattern"]]
         logger.info(
             "Construyendo geometría %s: celda %.2f mm, nervadura %.2f x %.2f mm, capa %s.",

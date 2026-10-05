@@ -112,11 +112,7 @@ class AnalizadorMalla:
         normales_suaves = normales_suaves / longitudes[:, None]
 
         # Distancia geodésica: el camino más corto por las aristas hasta el contorno.
-        adyacencia = [[] for _ in puntos]
-        longitudes_arista = np.linalg.norm(puntos[aristas[:, 0]] - puntos[aristas[:, 1]], axis=1)
-        for (origen, destino), longitud in zip(aristas, longitudes_arista):
-            adyacencia[origen].append((int(destino), float(longitud)))
-            adyacencia[destino].append((int(origen), float(longitud)))
+        adyacencia = AnalizadorMalla._Adyacencia(puntos, aristas)
         pendientes = [0]
         conectados = {0}
         while pendientes:
@@ -127,11 +123,46 @@ class AnalizadorMalla:
         if len(conectados) != len(puntos):
             raise SuperficieInvalida("La base debe ser una sola superficie conectada, sin capas o piezas separadas.")
 
+        distancia = AnalizadorMalla._Geodesica(puntos, aristas, contorno)
+        logger.info(
+            "Superficie preparada: %s vértices, %s triángulos, %s aristas de contorno.",
+            len(puntos),
+            len(faces),
+            len(contorno),
+        )
+        return puntos, faces, normales_suaves, distancia
+
+    @staticmethod
+    def DistanciaAlContorno(vertices, caras) -> np.ndarray:
+        """Entrada: malla triangular abierta. Proceso: Dijkstra por aristas.
+        Salida: distancia geodésica al contorno, en mm. Efectos: aviso si
+        algún vértice no alcanza el borde.
+        """
+        puntos = np.asarray(vertices, dtype=np.float64)
+        faces = np.asarray(caras, dtype=np.int32)
+        todas = np.vstack((faces[:, [0, 1]], faces[:, [1, 2]], faces[:, [2, 0]]))
+        aristas, cuentas = np.unique(np.sort(todas, axis=1), axis=0, return_counts=True)
+        return AnalizadorMalla._Geodesica(puntos, aristas, aristas[cuentas == 1])
+
+    @staticmethod
+    def _Adyacencia(puntos, aristas):
+        adyacencia = [[] for _ in puntos]
+        longitudes = np.linalg.norm(puntos[aristas[:, 0]] - puntos[aristas[:, 1]], axis=1)
+        for (origen, destino), longitud in zip(aristas, longitudes):
+            adyacencia[int(origen)].append((int(destino), float(longitud)))
+            adyacencia[int(destino)].append((int(origen), float(longitud)))
+        return adyacencia
+
+    @staticmethod
+    def _Geodesica(puntos, aristas, contorno) -> np.ndarray:
         distancia = np.full(len(puntos), np.inf)
+        if len(contorno) == 0:
+            return distancia
+        adyacencia = AnalizadorMalla._Adyacencia(puntos, aristas)
         cola = []
         for vertice in np.unique(contorno):
-            distancia[vertice] = 0
-            heapq.heappush(cola, (0, int(vertice)))
+            distancia[vertice] = 0.0
+            heapq.heappush(cola, (0.0, int(vertice)))
         while cola:
             recorrida, actual = heapq.heappop(cola)
             if recorrida > distancia[actual]:
@@ -141,13 +172,8 @@ class AnalizadorMalla:
                 if propuesta < distancia[vecino]:
                     distancia[vecino] = propuesta
                     heapq.heappush(cola, (propuesta, vecino))
-
         if not np.isfinite(distancia).all():
-            logger.warning("Hay vértices sin camino al contorno; su distancia geodésica quedó infinita.")
-        logger.info(
-            "Superficie preparada: %s vértices, %s triángulos, %s aristas de contorno.",
-            len(puntos),
-            len(faces),
-            len(contorno),
-        )
-        return puntos, faces, normales_suaves, distancia
+            Registro.Obtener("malla").warning(
+                "Hay vértices sin camino al contorno; su distancia geodésica quedó infinita."
+            )
+        return distancia
