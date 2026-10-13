@@ -9,6 +9,10 @@ El [registro de reorganización documental](2026-10-13-reorganizacion-documental
 procede de trabajo concurrente autorizado por el usuario. Su alcance se limita
 a traslados y referencias; no cierra los hallazgos de código de esta auditoría.
 
+[RES-2026-10-13-002](2026-10-13-resolve-organizar-pruebas.md) autoriza el
+traslado de las pruebas a subcarpetas y de sus fixtures a `tests/assets/`.
+Sigue en curso y no cierra hallazgos.
+
 ## Protocolo
 
 1. Identificar todas las auditorías que incluyan cada archivo y todos los

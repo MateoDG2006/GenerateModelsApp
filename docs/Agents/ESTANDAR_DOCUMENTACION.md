@@ -6,7 +6,7 @@
 
 La estructura adopta vistas de contexto, componentes, ejecución y despliegue de **arc42/C4**, diagramas de clases y secuencia de **UML**, contratos de entrada/proceso/salida y procedimientos operativos. Es una convención de documentación de software; no se afirma certificación de cumplimiento de una norma ISO/IEEE.
 
-Cada carpeta tiene un `README.md` como índice. Los documentos de arquitectura identifican límites, dependencias y decisiones; los catálogos explican archivos y símbolos; los contratos definen formatos, unidades, errores y efectos; los manuales incluyen precondiciones, pasos y resultados observables. La fecha y línea base común están en [Agents/README.md](README.md), evitando fechas distintas copiadas en cada página.
+Cada carpeta tiene un `README.md` como índice. Los documentos de arquitectura identifican límites, dependencias y decisiones; los catálogos explican archivos y símbolos; los contratos definen formatos, unidades, errores y efectos; los manuales incluyen precondiciones, pasos y resultados observables. La fecha y revisión inicial común están en [Agents/README.md](README.md), evitando fechas distintas copiadas en cada página.
 
 Referencias metodológicas: [arc42](https://arc42.org/overview), [C4](https://c4model.com/), [UML 2.5.1 de OMG](https://www.omg.org/spec/UML/2.5.1). Se usan como estructura de comunicación, no como funcionalidades del producto.
 

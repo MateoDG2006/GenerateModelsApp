@@ -1,8 +1,25 @@
-# DATABASE — Propuesta de PostgreSQL, versiones e historial
+# DATABASE — PostgreSQL, versiones e historial
 
-**Estado:** propuesta de implementación; no implementada. **Fecha:** 2026-10-13. **Ámbito:** backend Reflex, persistencia y futura vista de historial.
+**Estado:** implementado el 2026-10-13 con las desviaciones de la sección siguiente. **Ámbito:** backend Reflex, persistencia, trabajador y vista `/historial`.
 
-**Decisiones del usuario:** PostgreSQL sin ORM; archivos STL/NPZ en almacenamiento privado y metadatos en PostgreSQL; conservar imports, preferencias, parámetros, versiones, lotes y exports. Este documento especifica Docker, Makefile y migraciones como trabajo futuro. No crea base, contenedores, migraciones, seeds, clases ni Makefile.
+**Decisiones del usuario:** PostgreSQL, inicialmente sin ORM y después con SQLAlchemy 2.0 y Alembic (ver desviaciones); archivos grandes (originales, NPZ, STL) en un bucket S3 (MinIO en Docker) y su `object_url` en PostgreSQL; Redis para caché; conservar imports, preferencias, parámetros, versiones, lotes y exports. Las secciones 1–17 se conservan como diseño de referencia; el comportamiento vigente está en [ARQUITECTURA.md](ARQUITECTURA.md), [CONTRATOS.md](CONTRATOS.md) y [OPERACION_Y_PRUEBAS.md](OPERACION_Y_PRUEBAS.md).
+
+## Desviaciones de la implementación respecto de este diseño
+
+| Tema | Diseño original | Implementado |
+|---|---|---|
+| Almacenamiento | `AlmacenamientoPrivado` local bajo `PRIVATE_STORAGE_ROOT`, S3 como opción futura | Bucket S3 (MinIO en Compose) mediante `StorageS3`; `file_assets.object_url` obligatoria en filas `ready`; clave `usuarios/<user_id>/assets/<asset_id>[.stl]` |
+| Lectura de STL | Descarga privada autorizada por export | Política de bucket con lectura anónima solo de `usuarios/*/assets/*.stl`; visor y descarga usan la `object_url`. La URL contiene dos UUID aleatorios, pero quien la conozca puede leer el STL. Originales, NPZ y JSON siguen privados |
+| Caché | Sin caché compartida | Redis por contenido (SHA-256 del NPZ, paso, autoescala) con TTL de 7 días; prescindible |
+| Retención de imports rechazados | 7 días | 30 días (`ConciliadorArchivos.DIAS_RECHAZO`); staged huérfano 24 h |
+| Handlers | `SolicitarGeneracion`, `ActualizarProgreso`, `CargarPreferencias`, `AplicarFiltros`, `SiguientePagina`, `RestaurarVersion`… | Se conservaron las firmas auditadas (`Previsualizar`, `PedirLote`, `Generar`, `CargarPredeterminados`) y se añadieron `SeguirLote`, `CancelarLote`, `Cargar`, `Siguiente`, `Anterior`, `Seleccionar`, `Restaurar`, `Reintentar`, `Descargar` |
+| `/historial` | Detalle de versión, filtro por proyecto, columna de validación | Tabla filtrable por patrón, estado y fechas, comparación de hasta 3 versiones con diferencias de parámetros, restaurar, reintentar y descargar. `ServicioHistorial.Detalle` y el filtro `project_id` existen en servicio pero la página no los usa; cada usuario tiene un proyecto predeterminado |
+| Ejecución en producción | Sin especificar | `reflex run --env prod` sirve frontend, backend y `/auth/*` en un único puerto (3000); `ORTESISLAB_OIDC_REDIRECT_URI` debe apuntar a él |
+| Borrado de cuenta | Flujo `deletion_pending` con purga ordenada | Solo existe el estado en el esquema; el flujo de purga no está implementado |
+| Acceso a datos | Psycopg 3 con SQL parametrizado, sin ORM; consultas largas en `web/persistence/sql/` | SQLAlchemy 2.0 sobre psycopg 3: modelos declarativos de las 13 tablas en `web/persistence/Modelos.py`, motor y `Session` por proceso en `ConexionPostgres`, sentencias `select`/`insert`/`update` en el paquete `web/persistence/repositorios/` (un archivo por repositorio sobre `RepositorioBase`) con las mismas firmas y DTO. Se conservan `FOR UPDATE SKIP LOCKED`, `pg_advisory_xact_lock`, `ON CONFLICT` y `RETURNING`. Ya no hay archivos `.sql` de consultas |
+| Migraciones | dbmate con SQL versionado en `db/migrations/` y snapshot `db/schema.sql` | Alembic (`alembic.ini`, `db/alembic/env.py`) con `--autogenerate` desde `Modelos.py`. El repositorio no incluye revisiones: las genera y aplica el responsable del esquema (sección 12). No hay `db/schema.sql` ni objetivos `make` de migración |
+| Migraciones concurrentes | Bloqueo de migración | Alembic no bloquea; ejecutar desde un único operador |
+| Subidas anteriores | No previsto | `scripts/MigrarSubidas.py` traslada `uploaded_files/` al bucket bajo un usuario semilla |
 
 ## 1. Objetivo y alcance
 
@@ -750,24 +767,80 @@ Roles separados en implementación: administrador/provisionador local; `ortesisl
 
 La DSN de una app local usa host `127.0.0.1:5433`; la del servicio de migración usa host Compose `postgres:5432`. `sslmode=disable` se limita a desarrollo local; producción requiere transporte privado/TLS verificado. Secretos y DSN no aparecen en logs, CLI con `--url`, capturas ni archivos versionados.
 
-## 12. Migraciones SQL sin ORM
+## 12. Migraciones con Alembic
 
-Dbmate es una herramienta externa para ejecutar scripts SQL versionados; no mapea objetos ni genera esquema a partir de clases. Usar `new` para crear plantilla y completar manualmente los cambios. Mantener el historial SQL en Git. [Dbmate: documentación oficial](https://github.com/amacneil/dbmate).
+*Sección vigente; sustituye al diseño original con dbmate.* El esquema objetivo es `Base.metadata` de [`web/persistence/Modelos.py`](../../web/persistence/Modelos.py). Las 13 tablas declaran FK compuestas, `CHECK`, `JSONB`, `timestamptz`, índices parciales y descendentes. Las restricciones llevan los nombres que PostgreSQL asignaba al esquema original, y la convención de nombres del `MetaData` cubre las PK (`<tabla>_pkey`), las UNIQUE (`<tabla>_<columna>_key`) y las FK (`<tabla>_<columna>_fkey`) sin nombre explícito. El repositorio no contiene revisiones: `db/alembic/versions/` está vacío. Comandos e inicialización de la base en [OPERACION_Y_PRUEBAS.md](OPERACION_Y_PRUEBAS.md#base-de-datos-inicializar-y-migrar).
 
-| Ruta futura | Propósito |
+| Ruta | Propósito |
 |---|---|
-| `db/migrations/<timestamp>_crear_identidad_assets.sql` | Usuarios, preferencias y assets |
-| `db/migrations/<timestamp>_crear_proyectos_versiones.sql` | Proyectos, imports, versiones y ownership |
-| `db/migrations/<timestamp>_crear_generacion_historial.sql` | Lotes, ítems, intentos, resultados, exports y eventos; FK circular del ganador al final |
-| `db/migrations/<timestamp>_agregar_indices_permisos.sql` | Índices, restricciones adicionales y grants a roles preprovisionados |
-| `db/seeds/development.sql` | Fixture idempotente exclusivamente local |
-| `db/schema.sql` | Snapshot generado de esquema para revisión; no sustituye migraciones |
+| `alembic.ini` | `script_location = db/alembic`; nombres de archivo `AAAAMMDD_HHMM_<slug>` |
+| `db/alembic/env.py` | Un único flujo conectado (sin modo `--sql`); URL del rol migrador desde `Ajustes`, `-x base=test` para la base de pruebas, `version_table_schema="ortesislab"`, filtro de `alembic_version`, `compare_type` y `compare_server_default` |
+| `db/alembic/script.py.mako` | Plantilla de revisión |
+| `db/alembic/versions/` | Revisiones generadas por el responsable del esquema |
+| `db/test/preparar_base.sql` | Crea el esquema `ortesislab` y los permisos de base en una base vacía (variable `base`) |
+| `db/seeds/development.sql` | Fixture idempotente exclusivamente local; exige el esquema migrado |
 
-Cada migración tendrá secciones up/down. Aplicar transaccionalmente salvo operaciones que PostgreSQL no permita dentro de transacción, que deberán separarse y documentarse. En producción preferir corrección hacia delante frente a un down que elimina historial. Un cambio de contrato usa estrategia expandir → adaptar código → completar datos → restringir/retirar, manteniendo compatibilidad durante el despliegue.
+`--autogenerate` no produce los elementos siguientes. La primera revisión debe añadirlos a mano.
 
-Usar bloqueo de migración y modo estricto de orden de dbmate. La tabla técnica guarda versiones, **no verifica hashes del contenido**: CI debe comprobar que migraciones ya publicadas no fueron reescritas. `status` informa aplicación pendiente, no certifica integridad semántica ni ausencia de cambios manuales.
+FK circular del intento ganador. Crearla después de `generation_attempts` y borrarla primero en `downgrade`:
+
+```python
+op.create_foreign_key(
+    "batch_items_winning_attempt_fk", "batch_items", "generation_attempts",
+    ["user_id", "id", "winning_attempt_id"], ["user_id", "batch_item_id", "id"],
+)
+```
+
+Trigger de versiones. Una versión solo admite un import `ready` del mismo usuario y un padre de número menor. Crearlo después de `model_versions`; en `downgrade`, `DROP FUNCTION model_versions_comprobar()` tras borrar la tabla:
+
+```sql
+CREATE FUNCTION model_versions_comprobar() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM imports
+        WHERE id = NEW.import_id AND user_id = NEW.user_id AND status = 'ready'
+    ) THEN
+        RAISE EXCEPTION 'La versión requiere un import ready del mismo usuario'
+            USING ERRCODE = 'check_violation';
+    END IF;
+    IF NEW.parent_version_id IS NOT NULL AND NOT EXISTS (
+        SELECT 1 FROM model_versions
+        WHERE id = NEW.parent_version_id AND version_number < NEW.version_number
+    ) THEN
+        RAISE EXCEPTION 'El padre debe ser una versión anterior del proyecto'
+            USING ERRCODE = 'check_violation';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER model_versions_comprobar_trg BEFORE INSERT ON model_versions
+    FOR EACH ROW EXECUTE FUNCTION model_versions_comprobar();
+```
+
+Permisos por rol. La aplicación no borra, no altera versiones ni el historial append-only; el trabajador reserva ítems y registra intentos, resultados y exports. En `downgrade`, `REVOKE ALL ON ALL TABLES IN SCHEMA ortesislab FROM ortesislab_app, ortesislab_worker`:
+
+```sql
+GRANT SELECT, INSERT, UPDATE ON app_users, user_preferences, auth_sessions, file_assets, projects, imports TO ortesislab_app;
+GRANT SELECT, INSERT ON model_versions TO ortesislab_app;
+GRANT SELECT, INSERT, UPDATE ON generation_batches, batch_items TO ortesislab_app;
+GRANT SELECT ON generation_attempts, generation_results, exports TO ortesislab_app;
+GRANT SELECT, INSERT ON history_events TO ortesislab_app;
+GRANT SELECT ON app_users, projects, imports, model_versions TO ortesislab_worker;
+GRANT SELECT, UPDATE ON generation_batches, batch_items TO ortesislab_worker;
+GRANT SELECT, INSERT, UPDATE ON generation_attempts, file_assets, exports TO ortesislab_worker;
+GRANT SELECT, INSERT ON generation_results TO ortesislab_worker;
+GRANT SELECT, INSERT ON history_events TO ortesislab_worker;
+```
+
+Las pruebas de `tests/persistencia/test_propiedad_datos.py` dependen de esos permisos, del `CHECK` `file_assets_ready_url_ck` y de las FK compuestas.
+
+Alembic compara tablas, columnas, tipos, defaults, índices y restricciones con nombre; no compara `GRANT`, funciones ni triggers, y no verifica que una revisión ya aplicada no se haya reescrito. En producción preferir corrección hacia delante frente a un `downgrade` que elimina historial. Un cambio de contrato usa la estrategia expandir → adaptar código → completar datos → restringir/retirar. [Alembic: autogenerate](https://alembic.sqlalchemy.org/en/latest/autogenerate.html).
 
 ## 13. Makefile: contrato de comandos a implementar
+
+*Diseño original.* El `Makefile` vigente no tiene `db-create`, `db-new`, `db-migrate`, `db-status`, `db-check`, `db-rollback` ni `db-schema`: las migraciones se ejecutan con Alembic a mano y `db-test-reset` solo recrea la base vacía. `make db-help` lista los objetivos reales.
 
 El archivo `Makefile` se creará en una futura implementación. Será un wrapper de Docker Compose, dbmate y clientes PostgreSQL; no necesita instalar un ORM. En Windows documentar GNU Make y Docker Desktop como requisitos y usar clientes `psql/pg_dump/pg_restore` dentro del contenedor para evitar dependencias de shell local.
 

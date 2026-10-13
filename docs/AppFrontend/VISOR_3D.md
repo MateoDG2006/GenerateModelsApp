@@ -9,9 +9,11 @@ flowchart TD
   A[Parametro src de URL] --> B{Existe src}
   B -->|No| C[Mensaje y excepción sin malla]
   B -->|Sí| D[Importar Three.js 0.169.0 y crear renderer]
-  D --> E[fetch src]
+  D --> E[fetch src = object_url en el bucket]
+  E -->|Error de red| X[No se pudo contactar con el almacén de archivos]
   E --> F{HTTP ok}
-  F -->|No| G[Mensaje de error HTTP]
+  F -->|404 o 403| Y[El STL ya no está en el almacén]
+  F -->|Otro código| G[No se pudo leer la malla generada]
   F -->|Sí| H[ArrayBuffer STL binario]
   H --> I[DataView: contador a offset 80]
   I --> J[Float32Array de posiciones]
@@ -23,7 +25,9 @@ flowchart TD
 
 `geometria(buffer)` lee uint32 little endian en byte 80 y comienza registros en byte 84. Por triángulo omite 12 bytes de normal, copia nueve float32 de posiciones y omite dos bytes de atributo. Crea geometría **sin índices**, recalcula normales y esfera envolvente. Solo consume el STL **binario generado por el backend**; la aceptación de STL ASCII corresponde al lector de subidas, no a este visor.
 
-No valida explícitamente tamaño, contador máximo o todos los errores de formato. Si fetch/parseo/importación falla fuera de los casos tratados no hay un catch general ni botón de reintento; la consola del iframe es parte del diagnóstico. `src` se codifica al construir la URL pero el HTML acepta la cadena que reciba; esa codificación no es una política de autorización de recursos.
+`src` es la `object_url` del STL en el bucket S3. La política del bucket permite su lectura anónima, por eso el iframe la descarga sin cookie ni proxy. Un fallo de red muestra `No se pudo contactar con el almacén de archivos.`; 404 o 403 muestran `El STL ya no está en el almacén. Vuelva a generar esta variante.`; otros códigos muestran `No se pudo leer la malla generada.`
+
+No valida explícitamente tamaño, contador máximo o todos los errores de formato. Si parseo/importación fallan no hay botón de reintento; la consola del iframe es parte del diagnóstico. `src` se codifica al construir la URL pero el HTML acepta la cadena que reciba; esa codificación no es una política de autorización de recursos.
 
 ## Escena y cámara
 
