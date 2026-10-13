@@ -1,0 +1,43 @@
+# Aplicación Reflex. Leído por web/ConfiguracionBackend.py.
+
+# Cada cuánto consulta la página el progreso de un lote.
+intervalo_progreso_s: 1.0
+# Combinaciones por lote; no puede superar persistencia.yaml lotes.maximo_items.
+maximo_variantes: 12
+# Espera máxima de GeneradorWeb.Crear al trabajador.
+espera_crear_s: 600.0
+# Tamaño máximo de la superficie subida y de su contenido descomprimido.
+maximo_bytes: 52428800
+maximo_descomprimido_bytes: 134217728
+
+# Patrones de relleno ofrecidos y su etiqueta visible. Las claves son los
+# nombres del núcleo; el orden es el de los selectores.
+patrones:
+  VORONOI: "Orgánico / Voronoi"
+  HEX: "Hexagonal"
+  DIAMOND: "Rombos"
+  SQUARE: "Cuadrícula"
+  SOLID: "Macizo"
+
+# Parámetros numéricos que se pueden variar en un lote y su etiqueta visible.
+ejes:
+  cell_mm: "Tamaño de celda (mm)"
+  rib_width_mm: "Ancho de nervadura (mm)"
+  rib_height_mm: "Altura de nervadura (mm)"
+  skin_mm: "Espesor de capa interior (mm)"
+  solid_mm: "Espesor macizo (mm)"
+  border_mm: "Ancho de marco perimetral (mm)"
+  rounding_mm: "Transición de nervadura (mm)"
+  angle_deg: "Giro del patrón (grados)"
+  seed: "Semilla del patrón orgánico"
+  reinforce_width_mm: "Ancho de banda maciza (mm)"
+  reinforce_y_mm: "Posición de banda, Y (mm)"
+
+# Etiqueta visible de cada estado de ítem en /historial. Las claves son los
+# valores de web/enums/Lotes.py EstadoItem.
+estados_visibles:
+  queued: "En cola"
+  running: "En curso"
+  succeeded: "Lista"
+  failed: "Fallida"
+  cancelled: "Cancelada"
