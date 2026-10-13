@@ -17,5 +17,8 @@ wheels/
 # Registro de ejecución de OrtesisLab
 logs/
 
-# Mallas que la aplicación web escribe para previsualizar
+# Subidas locales anteriores al bucket; scripts/MigrarSubidas.py las traslada
 uploaded_files/
+
+# Configuración local con secretos
+.env

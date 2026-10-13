@@ -1,0 +1,16 @@
+# Proceso trabajador. Leído por web/ConfiguracionBackend.py.
+
+# Vigencia de la reserva de un ítem; el latido la renueva antes de que venza.
+lease_s: 120
+latido_s: 30
+# Cada cuánto se devuelven a la cola los ítems con lease vencido.
+supervision_s: 30
+conciliacion_s: 600
+
+conciliador:
+  # Antigüedad a partir de la cual se borran assets staged.
+  horas_staged: 24
+  # Antigüedad a partir de la cual se borran imports rechazados.
+  dias_rechazo: 30
+  # Filas ready comprobadas contra el bucket por consulta.
+  lote_comprobacion: 200

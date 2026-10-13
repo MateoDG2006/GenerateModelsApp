@@ -1,0 +1,6 @@
+# Cliente del bucket S3. Leído por web/ConfiguracionBackend.py.
+
+timeout_conexion_s: 3
+timeout_lectura_s: 30
+# Intentos totales de boto3 por operación (modo standard).
+intentos: 3
