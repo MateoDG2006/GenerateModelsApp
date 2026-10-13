@@ -14,13 +14,16 @@ from GenerateModelsApp.Excepciones import ArchivoSuperficieIlegible
 from GenerateModelsApp.Malla import AnalizadorMalla
 from GenerateModelsApp.util.Utilidades import Configuracion
 
+from .ConfiguracionBackend import ConfiguracionBackend
+from .enums import ExtensionSuperficie
+
 
 class LectorSuperficie:
     """Convierte STL o NPZ en los arreglos que consume el núcleo geométrico."""
 
-    MAXIMO_BYTES = 50 * 1024 * 1024
-    MAXIMO_DESCOMPRIMIDO_BYTES = 128 * 1024 * 1024
-    EXTENSIONES = {".stl", ".npz"}
+    MAXIMO_BYTES = ConfiguracionBackend.Cargar("web")["maximo_bytes"]
+    MAXIMO_DESCOMPRIMIDO_BYTES = ConfiguracionBackend.Cargar("web")["maximo_descomprimido_bytes"]
+    EXTENSIONES = set(ExtensionSuperficie)
 
     @staticmethod
     def Preparar(
