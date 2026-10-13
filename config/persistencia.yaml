@@ -1,0 +1,23 @@
+# PostgreSQL, lotes e historial. Leído por web/ConfiguracionBackend.py.
+
+conexion:
+  # Reintentos de una transacción ante deadlock o fallo de serialización.
+  reintentos: 3
+  # Pausa antes del reintento n: pausa_reintento_s * n.
+  pausa_reintento_s: 0.05
+  # Espera máxima por una conexión libre del pool.
+  espera_adquisicion_s: 5.0
+  # Espera máxima al abrir una conexión nueva con PostgreSQL.
+  timeout_conexion_s: 10
+
+lotes:
+  maximo_items: 12
+  maximo_pendientes: 3
+  maximo_intentos: 3
+  # Espera antes del reintento n de un ítem: espera_reintento_s * 2^(n-1).
+  espera_reintento_s: 5.0
+
+historial:
+  limite_defecto: 25
+  limite_maximo: 100
+  maximo_comparacion: 3

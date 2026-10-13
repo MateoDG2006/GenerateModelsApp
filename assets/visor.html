@@ -72,9 +72,19 @@ function geometria(buffer) {
   return malla;
 }
 
-const respuesta = await fetch(origen);
+// El STL se lee directamente de su object_url en el bucket.
+let respuesta;
+try {
+  respuesta = await fetch(origen);
+} catch (error) {
+  aviso.textContent = "No se pudo contactar con el almacén de archivos.";
+  throw error;
+}
 if (!respuesta.ok) {
-  aviso.textContent = "No se pudo leer la malla generada.";
+  aviso.textContent =
+    respuesta.status === 404 || respuesta.status === 403
+      ? "El STL ya no está en el almacén. Vuelva a generar esta variante."
+      : "No se pudo leer la malla generada.";
   throw new Error(String(respuesta.status));
 }
 const malla = geometria(await respuesta.arrayBuffer());
