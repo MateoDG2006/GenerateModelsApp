@@ -2,6 +2,9 @@
 
 Usa el núcleo del paquete y no abre Blender. El refinamiento de la superficie
 se hace con NumPy; la reconstrucción voxel sigue siendo exclusiva del complemento.
+Las superficies se leen del bucket por la fila de ``file_assets`` del usuario
+activo y se guardan en Redis; los STL se publican en el bucket y se abren por
+su ``object_url``.
 """
 
 from __future__ import annotations
@@ -10,106 +13,69 @@ import struct
 import uuid
 import math
 from decimal import Decimal
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
 
 from GenerateModelsApp.EscalaMalla import EscalaMalla
-from GenerateModelsApp.Excepciones import (
-    ArchivoSuperficieIlegible,
-    ArchivoSuperficieNoEncontrado,
-    OrtesisLabError,
-)
-from GenerateModelsApp.Malla import AnalizadorMalla
-from GenerateModelsApp.Modeling import Model3DForPrinting
+from GenerateModelsApp.Excepciones import ArchivoSuperficieNoEncontrado
 from GenerateModelsApp.RefinadorMalla import RefinadorMalla
-from GenerateModelsApp.constants.Materials import PETG
-from GenerateModelsApp.constants.Nombres import ARCHIVO_SUPERFICIE
-from GenerateModelsApp.util.Utilidades import Configuracion
 
-from .LectorSuperficie import LectorSuperficie
+from .cache.CacheRedis import CacheRedis
+from .ConfiguracionBackend import ConfiguracionBackend
+from .persistence.ConexionPostgres import ConexionPostgres
+from .persistence.Contratos import ItemLote, SolicitudLote
+from .persistence.repositorios import RepositorioAssets
+from .services.ContextoUsuario import ContextoUsuario
+from .services.ServicioImports import PLANTILLA, ServicioImports
+from .storage.AlmacenamientoPrivado import PATRON_CLAVE, Almacen
 
+_CONFIG = ConfiguracionBackend.Cargar("web")
 # Un lote más grande deja la página esperando varios minutos.
-MAXIMO_VARIANTES = 12
+MAXIMO_VARIANTES = _CONFIG["maximo_variantes"]
+# Tiempo máximo que Crear espera al trabajador para una variante suelta.
+ESPERA_CREAR_S = _CONFIG["espera_crear_s"]
 
-PATRONES = {
-    "VORONOI": "Orgánico / Voronoi",
-    "HEX": "Hexagonal",
-    "DIAMOND": "Rombos",
-    "SQUARE": "Cuadrícula",
-    "SOLID": "Macizo",
-}
+PATRONES = _CONFIG["patrones"]
+EJES = _CONFIG["ejes"]
 
-EJES = {
-    "cell_mm": "Tamaño de celda (mm)",
-    "rib_width_mm": "Ancho de nervadura (mm)",
-    "rib_height_mm": "Altura de nervadura (mm)",
-    "skin_mm": "Espesor de capa interior (mm)",
-    "solid_mm": "Espesor macizo (mm)",
-    "border_mm": "Ancho de marco perimetral (mm)",
-    "rounding_mm": "Transición de nervadura (mm)",
-    "angle_deg": "Giro del patrón (grados)",
-    "seed": "Semilla del patrón orgánico",
-    "reinforce_width_mm": "Ancho de banda maciza (mm)",
-    "reinforce_y_mm": "Posición de banda, Y (mm)",
-}
+
+@lru_cache(maxsize=1)
+def _HuellaPlantilla() -> str:
+    if not PLANTILLA.is_file():
+        raise ArchivoSuperficieNoEncontrado(detalle=str(PLANTILLA))
+    return Almacen.Sha256(PLANTILLA.read_bytes())
 
 
 class GeneradorWeb:
-    """Prepara la superficie incluida y construye cada variante con el paquete."""
-
-    _crudas: dict[str, tuple] = {}
-    _maximo_superficies_crudas = 2
-    _superficies_refinadas: dict[tuple, tuple] = {}
-    _maximo_superficies_refinadas = 2
-    diagnostico_escala: dict = {
-        "factor": 1.0,
-        "factor_sugerido": 1.0,
-        "dimension_antes_mm": 0.0,
-        "dimension_despues_mm": 0.0,
-        "advertencia": "",
-    }
+    """Prepara la superficie y traduce resultados persistidos a fichas de la página."""
 
     @staticmethod
-    def _GuardarCruda(archivo: str, resultado: tuple) -> tuple:
-        GeneradorWeb._crudas[archivo] = resultado
-        while len(GeneradorWeb._crudas) > GeneradorWeb._maximo_superficies_crudas:
-            GeneradorWeb._crudas.pop(next(iter(GeneradorWeb._crudas)))
-        return resultado
+    def _Origen(archivo: str):
+        # Hash del contenido y lector diferido. "" es la plantilla incluida.
+        if not archivo:
+            return _HuellaPlantilla(), lambda: ServicioImports.PrepararPlantilla(PLANTILLA.read_bytes())
+        asset_id = ServicioImports.AssetDeNombre(archivo)
+        usuario = ContextoUsuario.Actual()
+        asset = ConexionPostgres.Ejecutar(lambda conexion: RepositorioAssets.Obtener(conexion, usuario.user_id, asset_id))
+        if asset.status != "ready" or asset.kind != "surface_npz":
+            raise ArchivoSuperficieNoEncontrado(detalle=archivo)
+        return asset.sha256, lambda: ServicioImports.NpzATupla(
+            Almacen.LeerVerificado(asset.storage_key, asset.sha256), archivo
+        )
 
     @staticmethod
     def Cruda(archivo: str = ""):
         # Conserva las coordenadas del archivo. La escala se decide al generar.
-        if archivo in GeneradorWeb._crudas:
-            return GeneradorWeb._crudas[archivo]
-        if archivo:
-            ruta = GeneradorWeb.RutaSuperficie(archivo)
-            try:
-                with np.load(ruta, allow_pickle=False) as datos:
-                    resultado = (
-                        np.asarray(datos["vertices"], dtype=np.float64),
-                        np.asarray(datos["faces"], dtype=np.int32),
-                        np.asarray(datos["normals"], dtype=np.float64),
-                        np.asarray(datos["border"], dtype=np.float64),
-                    )
-            except (OSError, ValueError, KeyError) as exc:
-                raise ArchivoSuperficieIlegible(str(ruta), str(exc)) from exc
-            return GeneradorWeb._GuardarCruda(archivo, resultado)
-
-        ruta = Path(__file__).resolve().parent.parent / "assets" / ARCHIVO_SUPERFICIE
-        if not ruta.is_file():
-            raise ArchivoSuperficieNoEncontrado(detalle=str(ruta))
-        try:
-            with np.load(ruta, allow_pickle=False) as datos:
-                vertices = datos["vertices"]
-                caras = datos["faces"]
-                normales = datos["normals"]
-        except (OSError, ValueError, KeyError) as exc:
-            raise ArchivoSuperficieIlegible(str(ruta), str(exc)) from exc
-        resultado = AnalizadorMalla.Preparar(
-            vertices, caras, normales, suavizarNormales=False
-        )
-        return GeneradorWeb._GuardarCruda("", resultado)
+        huella, cargar = GeneradorWeb._Origen(archivo)
+        clave = CacheRedis.ClaveCruda(huella)
+        resultado = CacheRedis.LeerTupla(clave)
+        if resultado is not None and len(resultado) == 4:
+            return resultado
+        resultado = cargar()
+        CacheRedis.GuardarTupla(clave, resultado)
+        return resultado
 
     @staticmethod
     def EjeMayor(archivo: str = "") -> float:
@@ -120,9 +86,7 @@ class GeneradorWeb:
 
     @staticmethod
     def Superficie(archivo: str = "", autoescalar: bool = True):
-        resultado, diagnostico = GeneradorWeb._SuperficieConDiagnostico(archivo, autoescalar)
-        GeneradorWeb.diagnostico_escala = diagnostico
-        return resultado
+        return GeneradorWeb._SuperficieConDiagnostico(archivo, autoescalar)[0]
 
     @staticmethod
     def _SuperficieConDiagnostico(archivo: str, autoescalar: bool):
@@ -142,44 +106,40 @@ class GeneradorWeb:
 
     @staticmethod
     def SuperficieRefinada(archivo: str, pasoMm: float, autoescalar: bool = True):
-        resultado, diagnostico = GeneradorWeb._SuperficieRefinadaConDiagnostico(
-            archivo, pasoMm, autoescalar
-        )
-        GeneradorWeb.diagnostico_escala = diagnostico
-        return resultado
+        return GeneradorWeb._SuperficieRefinadaConDiagnostico(archivo, pasoMm, autoescalar)[0]
 
     @staticmethod
     def _SuperficieRefinadaConDiagnostico(archivo: str, pasoMm: float, autoescalar: bool):
-        clave = (archivo, bool(autoescalar), float(pasoMm))
-        if clave not in GeneradorWeb._superficies_refinadas:
-            puntos, caras, normales, _borde = GeneradorWeb.Cruda(archivo)
-            puntos = np.array(puntos, dtype=np.float64, copy=True)
-            caras = np.array(caras, dtype=np.int32, copy=True)
-            normales = np.array(normales, dtype=np.float64, copy=True)
-            dimension = float(np.max(np.ptp(puntos, axis=0))) if len(puntos) else 0.0
-            arista = RefinadorMalla.AristaMayor(puntos, caras)
+        huella, _cargar = GeneradorWeb._Origen(archivo)
+        clave = CacheRedis.ClaveRefinada(huella, pasoMm, autoescalar)
+        clave_diagnostico = CacheRedis.ClaveDiagnostico(huella, autoescalar, pasoMm)
+        refinado = CacheRedis.LeerTupla(clave)
+        diagnostico = CacheRedis.LeerDiagnostico(clave_diagnostico)
+        if refinado is not None and diagnostico is not None:
+            return refinado, diagnostico
 
-            def refinar(factor: float):
-                copia = puntos if factor == 1.0 else puntos * factor
-                return RefinadorMalla.Refinar(copia, caras, normales, pasoMm)
+        puntos, caras, normales, _borde = GeneradorWeb.Cruda(archivo)
+        puntos = np.array(puntos, dtype=np.float64, copy=True)
+        caras = np.array(caras, dtype=np.int32, copy=True)
+        normales = np.array(normales, dtype=np.float64, copy=True)
+        dimension = float(np.max(np.ptp(puntos, axis=0))) if len(puntos) else 0.0
+        arista = RefinadorMalla.AristaMayor(puntos, caras)
 
-            refinado, diagnostico = EscalaMalla.Aplicar(
-                dimension,
-                autoescalar,
-                refinar,
-                arista_maxima=arista,
-                paso_mm=pasoMm,
-                n_caras=len(caras),
-            )
-            GeneradorWeb._superficies_refinadas[clave] = (refinado, diagnostico)
-            while (
-                len(GeneradorWeb._superficies_refinadas)
-                > GeneradorWeb._maximo_superficies_refinadas
-            ):
-                primera = next(iter(GeneradorWeb._superficies_refinadas))
-                if primera != clave:
-                    GeneradorWeb._superficies_refinadas.pop(primera)
-        return GeneradorWeb._superficies_refinadas[clave]
+        def refinar(factor: float):
+            copia = puntos if factor == 1.0 else puntos * factor
+            return RefinadorMalla.Refinar(copia, caras, normales, pasoMm)
+
+        refinado, diagnostico = EscalaMalla.Aplicar(
+            dimension,
+            autoescalar,
+            refinar,
+            arista_maxima=arista,
+            paso_mm=pasoMm,
+            n_caras=len(caras),
+        )
+        CacheRedis.GuardarTupla(clave, refinado)
+        CacheRedis.GuardarDiagnostico(clave_diagnostico, diagnostico)
+        return refinado, diagnostico
 
     @staticmethod
     def GuardarSuperficie(
@@ -187,77 +147,61 @@ class GeneradorWeb:
         contenido: bytes,
         autoescalar: bool = True,
     ) -> tuple[str, dict]:
-        # Normaliza la subida y guarda una copia privada para los lotes posteriores.
-        resultado, info = LectorSuperficie.Preparar(
-            nombre,
-            contenido,
-            autoescalar=False,
-        )
-        eje = float(np.max(np.ptp(resultado[0], axis=0))) if len(resultado[0]) else 0.0
-        diagnostico = EscalaMalla.Resolver(eje, autoescalar=autoescalar)
-        factor = float(diagnostico["factor"])
-        dimensiones = np.ptp(resultado[0], axis=0) * factor if len(resultado[0]) else np.zeros(3)
-        info["eje_mm"] = eje
-        info["factor_escala"] = factor
-        info["dimensiones"] = " × ".join(f"{valor:.1f}" for valor in dimensiones) + " mm"
-        info["aviso"] = (
-            f"Escala corregida ×{factor:g}. "
-            if factor != 1.0
-            else diagnostico["advertencia"]
-        )
-        archivo = f"superficie-{uuid.uuid4().hex}.npz"
-        ruta = GeneradorWeb.RutaSuperficie(archivo)
-        ruta.parent.mkdir(parents=True, exist_ok=True)
-        vertices, caras, normales, borde = resultado
-        np.savez_compressed(
-            ruta,
-            vertices=vertices,
-            faces=caras,
-            normals=normales,
-            border=borde,
-        )
-        GeneradorWeb._GuardarCruda(archivo, resultado)
-        return archivo, info
+        # Registra el import del usuario activo; original y NPZ quedan en el bucket.
+        importacion, info = ServicioImports.Importar(ContextoUsuario.Actual(), nombre, contenido, autoescalar)
+        return ServicioImports.NombreSuperficie(importacion.normalized_asset_id), info
 
     @staticmethod
     def Crear(opciones: dict, superficieArchivo: str = "", autoescalar: bool = True) -> dict:
-        # Devuelve la ficha visible y deja el STL donde Reflex puede servirlo.
-        if opciones["pattern"] == "SOLID":
-            superficie, diagnostico = GeneradorWeb._SuperficieConDiagnostico(
-                superficieArchivo,
-                autoescalar=autoescalar,
-            )
-        else:
-            paso = RefinadorMalla.PasoPatron(opciones)
-            superficie, diagnostico = GeneradorWeb._SuperficieRefinadaConDiagnostico(
-                superficieArchivo,
-                paso,
-                autoescalar=autoescalar,
-            )
-        puntos, caras, normales, borde = superficie
-        modelo = Model3DForPrinting(PETG())
-        vertices, faces, cfg, _interiores, _caras = modelo.Construir(
-            puntos, caras, normales, borde, **opciones
+        # Encola una versión suelta, espera al trabajador y devuelve su ficha persistida.
+        from .services.ServicioLotes import ServicioLotes
+
+        usuario = ContextoUsuario.Actual()
+        importacion = ServicioImports.Resolver(usuario, superficieArchivo)
+        lote = ServicioLotes.Solicitar(
+            usuario,
+            SolicitudLote(
+                import_id=importacion.id,
+                request_id=uuid.uuid4(),
+                mode="single",
+                definition={"origen": "Crear"},
+                variantes=[dict(opciones)],
+                auto_scale=bool(autoescalar),
+            ),
         )
-        volumen = modelo.CalculateVolume()
-        peso = modelo.CalculateWeight()
-        precio = modelo.CalculatePrice()
-        identificador = uuid.uuid4().hex[:8]
-        archivo = f"ortesis-{identificador}.stl"
-        GeneradorWeb.Escribir(archivo, GeneradorWeb.Stl(vertices, faces))
-        ficha = GeneradorWeb.Ficha(
-            identificador,
-            archivo,
-            cfg,
-            volumen=volumen,
-            peso=peso,
-            precio=precio,
-            error="",
-        )
-        factor = float(diagnostico.get("factor", 1))
-        if factor != 1.0:
-            ficha["detalle"] += f" · escala ×{factor:g}"
-        return ficha
+        progreso = ServicioLotes.Esperar(usuario, lote.id, ESPERA_CREAR_S)
+        if progreso.abierto:
+            return GeneradorWeb.FichaError(opciones, TimeoutError("El trabajador no terminó a tiempo."))
+        return GeneradorWeb._FichaDeItem(progreso.items[0])
+
+    @staticmethod
+    def _FichaDeItem(item: ItemLote) -> dict:
+        # La ficha visible sale de la fila persistida, nunca de un archivo local.
+        resultado = item.resultado
+        if item.status == "succeeded" and resultado is not None:
+            if resultado.stl_status != "ready" or not resultado.stl_url:
+                return GeneradorWeb.Ficha(
+                    str(item.id), "", item.parameters, error="El STL ya no está en el almacén."
+                )
+            ficha = GeneradorWeb.Ficha(
+                str(item.id),
+                resultado.stl_url,
+                item.parameters,
+                volumen=resultado.volume_mm3,
+                peso=resultado.weight_g,
+                precio=float(resultado.estimated_price),
+                error="",
+            )
+            factor = float(resultado.effective_scale or 1.0)
+            if factor != 1.0:
+                ficha["detalle"] += f" · escala ×{factor:g}"
+            return ficha
+        if item.status == "cancelled":
+            return GeneradorWeb.Ficha(str(item.id), "", item.parameters, error="Cancelada.")
+        texto = (item.error_message or "").strip() or "No se pudo construir esta variante."
+        if len(texto) > 180:
+            texto = texto[:177] + "..."
+        return GeneradorWeb.Ficha(str(item.id), "", item.parameters, error=texto)
 
     @staticmethod
     def FichaError(opciones: dict, exc: Exception) -> dict:
@@ -436,39 +380,39 @@ class GeneradorWeb:
 
     @staticmethod
     def Escribir(nombre: str, datos: bytes) -> None:
-        # El visor lee este archivo desde la carpeta de subidas de Reflex.
-        import reflex as rx
-
-        destino = GeneradorWeb.Ruta(nombre)
-        destino.parent.mkdir(parents=True, exist_ok=True)
-        destino.write_bytes(datos)
-        rx.get_upload_dir()
+        # Repone el objeto de un STL registrado; solo acepta los bytes que su fila declara.
+        clave = GeneradorWeb.Ruta(nombre).as_posix()
+        usuario = ContextoUsuario.Actual()
+        asset = ConexionPostgres.Ejecutar(lambda conexion: RepositorioAssets.PorClave(conexion, usuario.user_id, clave))
+        huella = Almacen.Sha256(datos)
+        if huella != asset.sha256:
+            raise ValueError("Los datos no coinciden con la malla registrada.")
+        Almacen.Actual().Publicar(clave, datos, asset.media_type, huella, f"ortesis-{asset.id.hex[:8]}.stl")
 
     @staticmethod
     def Leer(nombre: str) -> bytes:
-        return GeneradorWeb.Ruta(nombre).read_bytes()
+        clave = GeneradorWeb.Ruta(nombre).as_posix()
+        usuario = ContextoUsuario.Actual()
+        asset = ConexionPostgres.Ejecutar(lambda conexion: RepositorioAssets.PorClave(conexion, usuario.user_id, clave))
+        return Almacen.LeerVerificado(asset.storage_key, asset.sha256)
 
     @staticmethod
     def Ruta(nombre: str) -> Path:
-        # Solo acepta el nombre que esta clase acaba de generar.
-        if len(nombre) != len("ortesis-12345678.stl") or not nombre.startswith("ortesis-") or not nombre.endswith(".stl"):
+        # Clave del objeto de una object_url del usuario activo; rechaza cualquier otra.
+        coincidencia = PATRON_CLAVE.search(nombre)
+        if coincidencia is None or not nombre.endswith(".stl"):
             raise ValueError("Esa malla no está en el lote.")
-        import reflex as rx
-
-        return rx.get_upload_dir() / nombre
+        clave = coincidencia.group(0)
+        if nombre != Almacen.Actual().Url(clave) or coincidencia.group("user") != str(ContextoUsuario.Actual().user_id):
+            raise ValueError("Esa malla no está en el lote.")
+        return Path(clave)
 
     @staticmethod
     def RutaSuperficie(nombre: str) -> Path:
-        # La aplicación solo reabre los NPZ internos creados por GuardarSuperficie.
-        prefijo = "superficie-"
-        identificador = nombre[len(prefijo) : -len(".npz")]
-        if (
-            not nombre.startswith(prefijo)
-            or not nombre.endswith(".npz")
-            or len(identificador) != 32
-            or any(caracter not in "0123456789abcdef" for caracter in identificador)
-        ):
+        # Clave del NPZ normalizado de un import del usuario activo.
+        asset_id = ServicioImports.AssetDeNombre(nombre)
+        usuario = ContextoUsuario.Actual()
+        asset = ConexionPostgres.Ejecutar(lambda conexion: RepositorioAssets.Obtener(conexion, usuario.user_id, asset_id))
+        if asset.kind != "surface_npz":
             raise ValueError("La superficie subida no tiene un identificador válido.")
-        import reflex as rx
-
-        return rx.get_upload_dir() / nombre
+        return Path(asset.storage_key)

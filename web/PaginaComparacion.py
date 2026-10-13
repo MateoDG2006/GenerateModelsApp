@@ -13,6 +13,7 @@ from .EstadoApp import (
 )
 from .GeneradorWeb import PATRONES
 from .LectorSuperficie import LectorSuperficie
+from .Sesion import Sesion
 
 
 class PaginaComparacion:
@@ -23,6 +24,7 @@ class PaginaComparacion:
         return rx.box(
             rx.color_mode.button(position="top-right"),
             rx.vstack(
+                Sesion.Barra(),
                 rx.heading("OrtesisLab", size="8"),
                 rx.text(
                     "Previsualice una ortesis o genere varias con los parámetros del complemento. "
@@ -382,7 +384,8 @@ class PaginaComparacion:
 
     @staticmethod
     def Enlace(archivo):
-        url = rx.get_upload_url(archivo)
+        # ``archivo`` es el object_url del STL en el bucket; el visor lo descarga sin pasar por el backend.
+        url = archivo if isinstance(archivo, Var) else Var.create(archivo)
         expresion = f"`/visor.html?src=${{encodeURIComponent({url})}}`"
         return Var(_js_expr=expresion, _var_type=str, _var_data=url._get_all_var_data())
 
