@@ -16,7 +16,7 @@ def empaquetar(destino=None):
     with ZipFile(temporal, 'w', ZIP_DEFLATED) as zipfile:
         for archivo in archivos:
             zipfile.write(archivo, 'GenerateModelsApp/' + archivo.relative_to(paquete).as_posix())
-        zipfile.write(ROOT / 'docs' / 'LEEME.md', 'GenerateModelsApp/LEEME.md')
+        zipfile.write(ROOT / 'docs' / 'BlenderPlugin' / 'LEEME.md', 'GenerateModelsApp/LEEME.md')
     with ZipFile(temporal) as zipfile:
         assert zipfile.testzip() is None
         assert 'GenerateModelsApp/__init__.py' in zipfile.namelist()

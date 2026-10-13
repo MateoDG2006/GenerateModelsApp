@@ -1,0 +1,29 @@
+{
+  "audit_id": "AUD-2026-10-13-001",
+  "date": "2026-10-13",
+  "timezone": "America/Bogota",
+  "purpose": "Resultados observados, no cierres ni resoluciones. Transcritos de las salidas de los ensayos; pasos reproducibles en el informe.",
+  "environment": {"python": "3.14.3", "numpy": "2.5.3", "reflex": "0.9.12", "blender": "5.2.2 LTS", "blender_build": "d13f752e3b9c"},
+  "verification": {
+    "unittest": {"command": ".venv/Scripts/python.exe -B -m unittest discover -s tests -v", "tests": 51, "seconds": 1.485, "exit_code": 0},
+    "blender_integration": {"script": "tests/blender_superficie_abierta.py", "method": "runpy en proceso background de fabrica; escritura de resultado versionado redirigida a un temporal", "exit_code": 0, "historical_result_preserved": true},
+    "blender_zip_test": {"script": "tests/blender_paquete_zip.py", "executed": false},
+    "zip": {"members": 27, "python_json_matches": 26, "crc_error": null, "missing_sources": [], "different_sources": [], "readme_matches": true},
+    "ast": {"python_files": 41, "total_functions": 292, "production_files": 33, "production_functions": 226, "production_functions_missing_EPS_text": 217, "production_simple_signature_fully_annotated": 63, "production_classes": 73, "production_classes_missing_EPS_text": 73, "production_modules_missing_EPS_text": 33},
+    "not_executed": ["browser E2E", "deployed HTTP authorization", "load exhaustion", "CVE scan", "license scan", "lint", "static types", "wheel build", "clinical or fabrication validation"]
+  },
+  "probes": {
+    "A-01": {"zip_bytes": 197, "member_bytes": 128, "shape": [1000000000, 3], "dtype": "float64", "requested_elements": 3000000000, "requested_allocation_bytes": 24000000000, "allocation_intercepted": true, "large_memory_actually_allocated": false},
+    "A-04": {"input_accepted": true, "plate_mm": [40, 40], "normals": [1, 0, 0], "solid_mm": 2, "volume_mm3": 0, "all_z_zero": true},
+    "A-05": {"python_open_surface_with_closed_tetra_attached_at_vertex_accepted": true, "blender_nonmanifold_vertices": 1, "blender_report": {"open_edges": 0, "nonmanifold_edges": 0, "degenerate_faces": 0, "triangles": 8, "components": 1, "triangle_crossings": 0, "ok": true}},
+    "A-06": {"budget_patch_in_memory": 4, "requested_step_mm": 5, "actual_max_edge_mm": 56.568542494923804, "returned_vertices": 4, "raised": false},
+    "A-08": {"evidence_file": "2026-10-13-export-evidence.json", "raw_triangles": 12, "evaluated_triangles": 24, "exported_triangles": 24, "raw_components": 1, "evaluated_components": 2, "export_report_ok": true},
+    "A-09": {"injected_failure": "ReconstruccionFallida in _AplicarModificador", "old_mesh_replaced": true, "old_mesh_deleted": true, "new_solid_mm_recorded": 3},
+    "A-11": {"pattern_batch_zero_accepted": 0.0, "consumer_error": "ValueError: range() arg 3 must not be zero"},
+    "A-13": {"before_mm3": 0.16666666666666666, "after_scale_2_cached_mm3": 0.16666666666666666, "expected_after_mm3": 1.3333333333333333},
+    "A-15": {"vertex_z": 1e40, "accepted_nonfinite_float32_output": true, "warning": "overflow encountered in cast"},
+    "A-16": {"raw_extent": 0.00004, "resolver_factor": 1000000.0, "resolver_extent_mm": 40.0, "loader_error": "SuperficieInvalida: La base contiene caras degeneradas; limpie la superficie antes de generar."},
+    "ascii_grammar": {"three_vertex_lines_without_solid_facet_accepted": true}
+  },
+  "sources_consulted": ["https://numpy.org/doc/stable/reference/security.html", "https://reflex.dev/docs/assets/upload-and-download-files/"]
+}

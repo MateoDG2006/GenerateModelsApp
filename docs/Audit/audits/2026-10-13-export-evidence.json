@@ -1,0 +1,30 @@
+{
+  "raw": {
+    "open_edges": 0,
+    "nonmanifold_edges": 0,
+    "degenerate_faces": 0,
+    "triangles": 12,
+    "components": 1,
+    "triangle_crossings": 0,
+    "ok": true
+  },
+  "evaluated": {
+    "open_edges": 0,
+    "nonmanifold_edges": 0,
+    "degenerate_faces": 0,
+    "triangles": 24,
+    "components": 2,
+    "triangle_crossings": 0,
+    "ok": false
+  },
+  "export_report": {
+    "open_edges": 0,
+    "nonmanifold_edges": 0,
+    "degenerate_faces": 0,
+    "triangles": 12,
+    "components": 1,
+    "triangle_crossings": 0,
+    "ok": true
+  },
+  "export_triangles": 24
+}
