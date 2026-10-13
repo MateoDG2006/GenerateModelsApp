@@ -1,6 +1,6 @@
 # Configuración exacta del núcleo
 
-> Generado desde los JSON del paquete. Para significado y efectos consultar [PARAMETROS.md](PARAMETROS.md).
+> Generado por `python docs/Agents/Scripts/GenerarIndices.py` desde los JSON del paquete. Para significado y efectos consultar [PARAMETROS.md](PARAMETROS.md).
 
 ## [comprobacion_geometrica.json](../../GenerateModelsApp/config/comprobacion_geometrica.json)
 
