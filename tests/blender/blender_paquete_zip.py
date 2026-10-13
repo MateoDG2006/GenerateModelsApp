@@ -9,7 +9,7 @@ from zipfile import ZipFile
 
 import bpy
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 test_root = (ROOT/'dist').resolve()
 test_root.mkdir(exist_ok=True)
 paquete = Path(os.environ.get('ORTESISLAB_ZIP', ROOT/'GenerateModelsApp.zip')).resolve()
