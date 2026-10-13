@@ -14,11 +14,6 @@ from uuid import UUID
 from web.ConfiguracionBackend import ConfiguracionBackend
 from web.enums import ITEMS_TERMINALES, LOTES_ABIERTOS
 
-ESQUEMA_PARAMETROS = 1
-ESQUEMA_NORMALIZACION = 1
-VERSION_LECTOR = "LectorSuperficie-1"
-VERSION_EXPORTADOR = "GeneradorWeb.Stl-1"
-
 _LOTES = ConfiguracionBackend.Cargar("persistencia")["lotes"]
 MAXIMO_ITEMS_LOTE = _LOTES["maximo_items"]
 MAXIMO_LOTES_PENDIENTES = _LOTES["maximo_pendientes"]
