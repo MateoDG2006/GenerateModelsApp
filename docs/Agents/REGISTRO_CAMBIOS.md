@@ -164,6 +164,11 @@ Pruebas y validaciones ejecutadas:
 No ejecutado: MinIO real, `make db-init-s3`, `make s3-backup`, la migración real de `uploaded_files/`, proveedor OIDC distinto del de pruebas, vista móvil, integración Blender.
 
 Retirada del verificador documental: `scripts/VerificarDocumentacion.py` no estaba en disco ni en `64bb48e`, y por instrucción del usuario se elimina de la documentación. Se borra `docs/Agents/linea_base_documental.json`, que solo usaba ese script. A petición posterior del usuario se añade [`docs/Agents/Scripts/GenerarIndices.py`](Scripts/GenerarIndices.py), que regenera `INVENTARIO.md`, los tres `SIMBOLOS.md` y `CONFIGURACION_GENERADA.md` conservando las descripciones escritas a mano, y comprueba enlaces; `--comprobar` no escribe. `MANTENIMIENTO.md`, `Agents/README.md`, `AGENTS.md` y el README raíz indican ejecutarlo. Ejecutado: la generación dejó `CONFIGURACION_GENERADA.md` y el índice Blender iguales salvo la línea de cabecera, y `--comprobar` a continuación informó «Catálogos al día y enlaces correctos» con código 0. Todos los enlaces relativos de `docs/` y del README raíz resuelven, salvo dos enlaces de `docs/Audit/` (informe de auditoría y `resolves/README.md`) a `resolves/2026-10-13-reorganizacion-documental.md`, que tampoco está en disco ni en `64bb48e`; no se modifican esos registros de auditoría.
+## 2026-10-13 — Constantes de versión sin uso en Contratos
+
+Se eliminan `ESQUEMA_PARAMETROS`, `ESQUEMA_NORMALIZACION`, `VERSION_LECTOR` y `VERSION_EXPORTADOR` de `web/persistence/Contratos.py`. No tenían consumidores. Las columnas `parameter_schema_version`, `normalization_schema_version`, `reader_version` y `exporter_version` siguen en el modelo y en `DATABASE.md`.
+
+**Evidencia ejecutada:** búsqueda en el repositorio sin otras referencias. `scripts/VerificarDocumentacion.py` no está en el árbol, así que no se regeneró la línea base.
 
 ## 2026-10-13 — Atributos en el diagrama entidad-relación
 
