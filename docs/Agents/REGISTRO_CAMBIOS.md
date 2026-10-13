@@ -1,5 +1,11 @@
 # Registro de cambios documentales
 
+## 2026-10-13 — Constantes de versión sin uso en Contratos
+
+Se eliminan `ESQUEMA_PARAMETROS`, `ESQUEMA_NORMALIZACION`, `VERSION_LECTOR` y `VERSION_EXPORTADOR` de `web/persistence/Contratos.py`. No tenían consumidores. Las columnas `parameter_schema_version`, `normalization_schema_version`, `reader_version` y `exporter_version` siguen en el modelo y en `DATABASE.md`.
+
+**Evidencia ejecutada:** búsqueda en el repositorio sin otras referencias. `scripts/VerificarDocumentacion.py` no está en el árbol, así que no se regeneró la línea base.
+
 ## 2026-10-13 — Atributos en el diagrama entidad-relación
 
 Se completa el ER de `AppBackend/DATABASE.md` con todos los atributos de las doce entidades, tipos, PK/FK/UK y nulabilidad. Las claves únicas compuestas se identifican con comentarios de agrupación; la sección de integridad conserva el detalle de FK compuestas e índices parciales. Se contrasta la cobertura de atributos con el diccionario de tablas y se ejecuta la verificación documental. El cambio es únicamente documental; no implementa PostgreSQL ni modifica el esquema propuesto.
