@@ -1,0 +1,107 @@
+# Infraestructura local de OrtesisLab: metadatos en PostgreSQL, binarios en
+# MinIO (S3) y caché de superficies en Redis. Solo escucha en 127.0.0.1.
+name: ortesislab-db
+
+services:
+  postgres:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ortesislab_dev}
+      POSTGRES_USER: ${POSTGRES_USER:?Defina POSTGRES_USER en infra/database/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD}
+      ORTESISLAB_MIGRATOR_PASSWORD: ${ORTESISLAB_MIGRATOR_PASSWORD:?Defina ORTESISLAB_MIGRATOR_PASSWORD}
+      ORTESISLAB_APP_PASSWORD: ${ORTESISLAB_APP_PASSWORD:?Defina ORTESISLAB_APP_PASSWORD}
+      ORTESISLAB_WORKER_PASSWORD: ${ORTESISLAB_WORKER_PASSWORD:?Defina ORTESISLAB_WORKER_PASSWORD}
+      ORTESISLAB_BACKUP_PASSWORD: ${ORTESISLAB_BACKUP_PASSWORD:?Defina ORTESISLAB_BACKUP_PASSWORD}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+      - ../../db/seeds:/seeds:ro
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    image: ${MINIO_IMAGE:-minio/minio:RELEASE.2025-09-07T16-13-09Z}
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Defina MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Defina MINIO_ROOT_PASSWORD}
+      MINIO_API_CORS_ALLOW_ORIGIN: ${ORTESISLAB_S3_CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Crea el bucket, la política de lectura anónima de los STL de resultado y la
+  # cuenta de servicio de la aplicación. Es idempotente.
+  minio-init:
+    image: ${MC_IMAGE:-minio/mc:RELEASE.2025-08-13T08-35-41Z}
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      ORTESISLAB_S3_ACCESS_KEY: ${ORTESISLAB_S3_ACCESS_KEY:?Defina ORTESISLAB_S3_ACCESS_KEY}
+      ORTESISLAB_S3_SECRET_KEY: ${ORTESISLAB_S3_SECRET_KEY:?Defina ORTESISLAB_S3_SECRET_KEY}
+      ORTESISLAB_S3_BUCKET: ${ORTESISLAB_S3_BUCKET:-ortesislab}
+    volumes:
+      - ./minio:/config:ro
+    entrypoint: ["/bin/sh", "/config/inicializar.sh"]
+    restart: "no"
+    profiles: ["init"]
+
+  redis:
+    image: redis:7.4-alpine
+    command:
+      - redis-server
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --maxmemory
+      - ${ORTESISLAB_REDIS_MAXMEMORY:-256mb}
+      - --maxmemory-policy
+      - allkeys-lru
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Herramienta efímera: no arranca con `up`.
+  mc:
+    image: ${MC_IMAGE:-minio/mc:RELEASE.2025-08-13T08-35-41Z}
+    profiles: ["tools"]
+    environment:
+      MC_HOST_local: http://${MINIO_ROOT_USER}:${MINIO_ROOT_PASSWORD}@minio:9000
+    volumes:
+      - ./backups:/backups
+
+  # Proveedor OIDC de pruebas para desarrollo local. No es un IdP real.
+  oidc:
+    image: ghcr.io/navikt/mock-oauth2-server:2.2.1
+    profiles: ["auth-dev"]
+    environment:
+      SERVER_PORT: "8080"
+      JSON_CONFIG: '{"interactiveLogin": true}'
+    ports:
+      - "127.0.0.1:${ORTESISLAB_OIDC_PORT:-8080}:8080"
+
+volumes:
+  postgres-data:
+  minio-data:
