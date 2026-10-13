@@ -13,7 +13,7 @@ import numpy as np
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 import GenerateModelsApp as addon
 from GenerateModelsApp.Objeto import GeneradorObjeto
@@ -184,6 +184,6 @@ assert 20 <= float(np.ptp(resultado, axis=0).max()) <= 1000
 assert float(np.ptp(np.array([v.co[:] for v in larga_malla.vertices]), axis=0).max()) > 1_000_000
 
 addon.unregister(); addon.register(); addon.unregister()
-(ROOT/'tests'/'resultado_blender.json').write_text(json.dumps({'blender': bpy.app.version_string,
+(ROOT/'tests'/'assets'/'resultado_blender.json').write_text(json.dumps({'blender': bpy.app.version_string,
     'upper_and_finger_openings': True, 'base_unchanged': True, 'patterns': records}, indent=2), encoding='utf-8')
 print('PASS_BLENDER: nueve variantes, dos canales abiertos, edición de base, panel, reconstrucción y rechazo de sólidos.', flush=True)
