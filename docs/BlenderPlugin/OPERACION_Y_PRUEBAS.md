@@ -30,15 +30,15 @@ Para cambiar la forma, mostrar la base en Outliner, editar caras, volver a Objec
 Con Blender en PATH:
 
 ```powershell
-blender --factory-startup --background --python-exit-code 1 --python tests/blender_superficie_abierta.py
-blender --factory-startup --background --python-exit-code 1 --python tests/blender_paquete_zip.py
+blender --factory-startup --background --python-exit-code 1 --python tests/blender/blender_superficie_abierta.py
+blender --factory-startup --background --python-exit-code 1 --python tests/blender/blender_paquete_zip.py
 ```
 
 `blender_superficie_abierta.py` usa una probeta de bandeja con canal lateral de dedo, cinco patrones, con/sin capa, registro y conservación de base. Examina que no se añadan techos sobre canales y la validez de las paredes. No es un modelo anatómico nuevo ni acredita todos los escenarios posibles.
 
 `blender_paquete_zip.py` extrae el ZIP en una carpeta temporal de pruebas, confirma importación aislada, ausencia de NPZ/bytecode, versión, registro, generación desde plano y exportación. Puede usar `ORTESISLAB_ZIP` para apuntar a otro paquete. Generar el ZIP antes de ejecutarla si ha cambiado el código; probar un ZIP histórico no valida las fuentes actuales.
 
-Las pruebas de núcleo/web se ejecutan con `uv run python -m unittest discover -s tests`; el 2026-10-13 pasaron 51. Las integraciones Blender anteriores quedan como procedimientos **no ejecutados en esta revisión documental**. `resultado_blender.json` y logs versionados son evidencia histórica. [Registro de revisión](../Agents/REGISTRO_CAMBIOS.md).
+Las pruebas de núcleo, geometría, web y persistencia se ejecutan con `uv run python -m unittest discover -s tests`. El mapa de carpetas está en [tests/README.md](../../tests/README.md). El 2026-10-13, antes de agruparlas, pasaron 51 en la revisión documental de esta guía. Las integraciones Blender anteriores quedan como procedimientos **no ejecutados en esta revisión documental**. `tests/assets/resultado_blender.json` y los logs versionados de esa carpeta son evidencia histórica. [Registro de revisión](../Agents/REGISTRO_CAMBIOS.md).
 
 ## Diagnóstico de fallos
 

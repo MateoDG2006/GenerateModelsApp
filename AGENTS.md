@@ -71,12 +71,14 @@ Antes de terminar:
 1. Revisar documentación y diagramas a partir del código vigente; usar CodeGraph
    primero si existe `.codegraph/`, según instrucciones de la sesión.
 2. Actualizar `docs/Agents/REGISTRO_CAMBIOS.md` con pruebas realmente ejecutadas.
-3. Ejecutar `python scripts/VerificarDocumentacion.py --actualizar` para regenerar
-   inventario, símbolos, configuración y línea base después de la revisión.
-4. Ejecutar `python scripts/VerificarDocumentacion.py` y resolver la deriva.
+3. Ejecutar `python docs/Agents/Scripts/GenerarIndices.py` para regenerar
+   inventario, símbolos y configuración después de la revisión, y completar en
+   `docs/Agents/INVENTARIO.md` las descripciones que informe como pendientes.
+4. Ejecutar `python docs/Agents/Scripts/GenerarIndices.py --comprobar` y
+   resolver la deriva o los enlaces rotos.
 
-No aceptar una nueva línea base como sustituto de explicar el cambio. El script
-no comprende semántica ni reescribe la prosa. No editar a mano archivos generados.
+El script no comprende semántica ni reescribe la prosa. No editar a mano los
+`SIMBOLOS.md` ni `CONFIGURACION_GENERADA.md`.
 Mantener `docs/BlenderPlugin/LEEME.md` autocontenido porque se distribuye dentro del ZIP Blender.
 No presentar logs o resultados históricos como validación de la versión actual.
 

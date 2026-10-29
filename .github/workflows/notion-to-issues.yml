@@ -1,0 +1,35 @@
+name: Notion → GitHub Issues
+
+# Crea una issue por cada tarea de Notion (base Tasksk) del proyecto OrtesisLab
+# que todavía no tenga issue, y escribe la URL de la issue de vuelta en la tarea.
+# Idempotente: no duplica.
+
+on:
+  workflow_dispatch: {}        # ejecución manual (pestaña Actions → Run workflow)
+  schedule:
+    - cron: '17 13 * * *'      # diario, 13:17 UTC
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: notion-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Sincronizar tareas de Notion → issues
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DB_ID: bf01f32280c683c7acb0018f3f25811d
+          NOTION_PROJECT_ID: 53c1f32280c6835fac02812ad11e5972
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python .github/scripts/notion_sync_issues.py
